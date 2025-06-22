@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36202.13 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodServiceInventoryApp", "FoodServiceInventoryApp\FoodServiceInventoryApp.csproj", "{41468C54-1522-4893-B559-FC1F65D81C7D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{41468C54-1522-4893-B559-FC1F65D81C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41468C54-1522-4893-B559-FC1F65D81C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41468C54-1522-4893-B559-FC1F65D81C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41468C54-1522-4893-B559-FC1F65D81C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C4E70C95-4BFC-4C95-BCA9-5770A6C7351E}
+	EndGlobalSection
+EndGlobal
