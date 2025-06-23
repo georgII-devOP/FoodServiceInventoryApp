@@ -16,9 +16,9 @@
         WindowStyle="None"
         Background="White">
 
-    <d:DesignData.DataContext>
+    <!--<d:DesignData.DataContext>
         <viewmodels:LoginVM d:IsDataSource="True"/>
-    </d:DesignData.DataContext>
+    </d:DesignData.DataContext>-->
 
     <Grid>
         <StackPanel VerticalAlignment="Center">
@@ -36,7 +36,7 @@
                 helpers:PasswordBoxAssistant.IsMonitoring="True" />
 
             <ui:Button Margin="0 20 0 0" Height="53" Width="300" CornerRadius="10" FontSize="18"
-                            Content="Войти" Appearance="Primary" HorizontalAlignment="Center"
+                            Content="Войти" Appearance="Secondary"  HorizontalAlignment="Center"
                             Command="{Binding LoginCommand}"/>
 
             <TextBlock Text="{Binding ErrorMessage}" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0 10 0 10"/>
