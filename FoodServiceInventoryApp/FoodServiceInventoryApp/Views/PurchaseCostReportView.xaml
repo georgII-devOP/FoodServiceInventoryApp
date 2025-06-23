@@ -28,13 +28,22 @@
 
             <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
                 <TextBlock Text="Продукт:" VerticalAlignment="Center" Margin="0 0 10 0"/>
-                <ComboBox ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProductFilter}" Width="150" Margin="0 0 20 0"/>
+                <ComboBox ItemsSource="{Binding ProductsFilter}"
+                          SelectedItem="{Binding SelectedProductFilter}"
+                          DisplayMemberPath="ProductName"
+                          Width="150" Margin="0 0 20 0"/>
 
                 <TextBlock Text="Поставщик:" VerticalAlignment="Center" Margin="0 0 10 0"/>
-                <ComboBox ItemsSource="{Binding Suppliers}" SelectedItem="{Binding SelectedSupplierFilter}" Width="150" Margin="0 0 20 0"/>
+                <ComboBox ItemsSource="{Binding SuppliersFilter}"
+                          SelectedItem="{Binding SelectedSupplierFilter}"
+                          DisplayMemberPath="CompanyName"
+                          Width="150" Margin="0 0 20 0"/>
 
                 <TextBlock Text="Категория:" VerticalAlignment="Center" Margin="0 0 10 0"/>
-                <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategoryFilter}" Width="150"/>
+                <ComboBox ItemsSource="{Binding CategoriesFilter}"
+                          SelectedItem="{Binding SelectedCategoryFilter}"
+                          DisplayMemberPath="CategoryName"
+                          Width="150"/>
             </StackPanel>
 
             <ui:Button Content="Сформировать отчет" Appearance="Primary" Margin="0 10 0 0" Command="{Binding GenerateReportCommand}"/>
@@ -42,7 +51,7 @@
 
         <StackPanel Grid.Row="2" Margin="0 20 0 0">
             <TextBlock Text="Общая стоимость:" FontSize="18" FontWeight="SemiBold"/>
-            <TextBlock Text="{Binding TotalCost, StringFormat='{}Cумма: {0:C}'}" FontSize="24" Margin="0 5 0 20"/>
+            <TextBlock Text="{Binding TotalCost, StringFormat='{}Cумма: {0:C}', ConverterCulture='ru-RU'}" FontSize="24" Margin="0 5 0 20"/>
 
             <TextBlock Text="Детали отчета:" FontSize="18" FontWeight="SemiBold" Margin="0 0 0 10"/>
             <DataGrid ItemsSource="{Binding ReportDetails}"
@@ -50,12 +59,12 @@
                       CanUserAddRows="False" CanUserDeleteRows="False"
                       Height="250">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Дата" Binding="{Binding SupplyDate, StringFormat='dd.MM.yyyy'}" Width="Auto"/>
-                    <DataGridTextColumn Header="Продукт" Binding="{Binding ProductName}" Width="*"/>
-                    <DataGridTextColumn Header="Поставщик" Binding="{Binding SupplierName}" Width="*"/>
-                    <DataGridTextColumn Header="Количество" Binding="{Binding SuppliedQuantity}" Width="Auto"/>
-                    <DataGridTextColumn Header="Цена за ед." Binding="{Binding SupplyUnitPrice}" Width="Auto"/>
-                    <DataGridTextColumn Header="Сумма" Binding="{Binding TotalItemCost, StringFormat='{}{0:C}'}" Width="Auto"/>
+                    <DataGridTextColumn Header="Дата" Binding="{Binding SupplyDate, StringFormat='dd.MM.yyyy'}" Width="150"/>
+                    <DataGridTextColumn Header="Продукт" Binding="{Binding ProductName}" Width="400"/>
+                    <DataGridTextColumn Header="Поставщик" Binding="{Binding SupplierName}" Width="300"/>
+                    <DataGridTextColumn Header="Количество" Binding="{Binding SuppliedQuantity}" Width="200"/>
+                    <DataGridTextColumn Header="Цена за ед." Binding="{Binding SupplyUnitPrice}" Width="140"/>
+                    <DataGridTextColumn Header="Сумма" Binding="{Binding TotalItemCost, StringFormat='{}{0:C}', ConverterCulture='ru-RU'}" Width="140"/>
                 </DataGrid.Columns>
             </DataGrid>
 

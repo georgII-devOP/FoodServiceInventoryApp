@@ -36,8 +36,8 @@ namespace FoodServiceInventoryApp
 
                     services.AddTransient<IProductService, ProductService>();
                     services.AddTransient<ICategoryService, CategoryService>();
-                    services.AddTransient<ISupplierService, SupplierServiceStub>();
-                    services.AddTransient<IProductSupplyHistoryService, ProductSupplyHistoryServiceStub>();
+                    services.AddTransient<ISupplierService, SupplierService>();
+                    services.AddTransient<IProductSupplyHistoryService, ProductSupplyHistoryService>();
                     services.AddTransient<IUserService, UserServiceStub>();
 
                     services.AddTransient<LoginVM>();
@@ -94,29 +94,6 @@ namespace FoodServiceInventoryApp
             }
             base.OnExit(e);
         }
-
-        public class SupplierServiceStub : ISupplierService
-        {
-            public Task<IEnumerable<FoodServiceInventoryApp.Models.Supplier>> GetAllSuppliersAsync() => Task.FromResult<IEnumerable<FoodServiceInventoryApp.Models.Supplier>>(new List<FoodServiceInventoryApp.Models.Supplier>());
-            public Task<FoodServiceInventoryApp.Models.Supplier> GetSupplierByIdAsync(int id) => Task.FromResult<FoodServiceInventoryApp.Models.Supplier>(null);
-            public Task<FoodServiceInventoryApp.Models.Supplier> AddSupplierAsync(FoodServiceInventoryApp.Models.Supplier supplier) => Task.FromResult<FoodServiceInventoryApp.Models.Supplier>(null);
-            public Task UpdateSupplierAsync(FoodServiceInventoryApp.Models.Supplier supplier) => Task.CompletedTask;
-            public Task DeleteSupplierAsync(int id) => Task.CompletedTask;
-            public Task<bool> SupplierExistsAsync(int id) => Task.FromResult(false);
-            public Task<FoodServiceInventoryApp.Models.Supplier> GetSupplierByNameAsync(string name) => Task.FromResult<FoodServiceInventoryApp.Models.Supplier>(null);
-        }
-
-        public class ProductSupplyHistoryServiceStub : IProductSupplyHistoryService
-        {
-            public Task<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>> GetAllSupplyRecordsAsync() => Task.FromResult<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>>(new List<FoodServiceInventoryApp.Models.ProductSupplyHistory>());
-            public Task<FoodServiceInventoryApp.Models.ProductSupplyHistory> GetSupplyRecordByIdAsync(int id) => Task.FromResult<FoodServiceInventoryApp.Models.ProductSupplyHistory>(null);
-            public Task AddSupplyRecordAsync(FoodServiceInventoryApp.Models.ProductSupplyHistory record) => Task.CompletedTask;
-            public Task UpdateSupplyRecordAsync(FoodServiceInventoryApp.Models.ProductSupplyHistory record) => Task.CompletedTask;
-            public Task DeleteSupplyRecordAsync(int id) => Task.CompletedTask;
-            public Task<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>> GetSupplyRecordsByDateRangeAsync(DateTime startDate, DateTime endDate) => Task.FromResult<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>>(new List<FoodServiceInventoryApp.Models.ProductSupplyHistory>());
-            public Task<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>> GetSupplyRecordsFilteredAsync(DateTime? startDate = null, DateTime? endDate = null, int? productId = null, int? supplierId = null, int? categoryId = null) => Task.FromResult<IEnumerable<FoodServiceInventoryApp.Models.ProductSupplyHistory>>(new List<FoodServiceInventoryApp.Models.ProductSupplyHistory>());
-        }
-
         public class UserServiceStub : IUserService
         {
             public Task<FoodServiceInventoryApp.Models.User> GetUserByUsernameAsync(string username) => Task.FromResult<FoodServiceInventoryApp.Models.User>(null);

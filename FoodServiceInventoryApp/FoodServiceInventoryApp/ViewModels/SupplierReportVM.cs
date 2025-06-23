@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FoodServiceInventoryApp.Services;
+using FoodServiceInventoryApp.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -16,6 +18,9 @@ namespace FoodServiceInventoryApp.ViewModels
             public decimal TotalPaid { get; set; }
         }
 
+        private readonly IProductSupplyHistoryService _supplyHistoryService;
+        private readonly ISupplierService _supplierService;
+
         [ObservableProperty]
         private DateTime? _startDate = DateTime.Now.AddMonths(-1);
 
@@ -30,8 +35,10 @@ namespace FoodServiceInventoryApp.ViewModels
 
         public ICommand GenerateReportCommand { get; }
 
-        public SupplierReportVM()
+        public SupplierReportVM(IProductSupplyHistoryService supplyHistoryService, ISupplierService supplierService)
         {
+            _supplyHistoryService = supplyHistoryService;
+            _supplierService = supplierService;
             SupplierReportItems = new ObservableCollection<SupplierReportItem>();
             GenerateReportCommand = new AsyncRelayCommand(ExecuteGenerateReportAsync);
         }
@@ -47,28 +54,39 @@ namespace FoodServiceInventoryApp.ViewModels
                 return;
             }
 
-            var dummySupplyHistory = new ObservableCollection<PurchaseCostReportVM.ReportDetailItem>
+            var supplies = await _supplyHistoryService.GetSupplyRecordsFilteredAsync(
+                startDate: StartDate.Value,
+                endDate: EndDate.Value
+            );
+
+            if (supplies == null || !supplies.Any())
             {
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = new DateTime(2025, 6, 5), ProductName = "Молоко", SupplierName = "Поставщик А", SuppliedQuantity = 5.0M, SupplyUnitPrice = 1.2M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = new DateTime(2025, 6, 10), ProductName = "Хлеб", SupplierName = "Поставщик Б", SuppliedQuantity = 10.0M, SupplyUnitPrice = 0.8M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = new DateTime(2025, 5, 15), ProductName = "Мука", SupplierName = "Поставщик А", SuppliedQuantity = 20.0M, SupplyUnitPrice = 0.9M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = new DateTime(2025, 6, 20), ProductName = "Салфетки", SupplierName = "Поставщик Б", SuppliedQuantity = 50.0M, SupplyUnitPrice = 0.03M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = new DateTime(2025, 5, 25), ProductName = "Масло", SupplierName = "Поставщик А", SuppliedQuantity = 8.0M, SupplyUnitPrice = 2.5M }
-            };
+                ErrorMessage = "Данные о поставках за выбранный период не найдены.";
+                return;
+            }
 
-            var filteredSupplies = dummySupplyHistory.Where(s => s.SupplyDate >= StartDate.Value && s.SupplyDate <= EndDate.Value);
-
-            var groupedBySupplier = filteredSupplies
-                .GroupBy(s => s.SupplierName)
-                .Select(g => new SupplierReportItem
+            var groupedBySupplierId = supplies
+                .GroupBy(s => s.SupplierId)
+                .Select(g => new
                 {
-                    SupplierName = g.Key,
-                    TotalPaid = g.Sum(item => item.TotalItemCost)
+                    SupplierId = g.Key,
+                    TotalPaid = g.Sum(item => item.SuppliedQuantity * item.SupplyUnitPrice)
                 })
-                .OrderBy(s => s.SupplierName)
                 .ToList();
 
-            SupplierReportItems = new ObservableCollection<SupplierReportItem>(groupedBySupplier);
+            var reportItems = new ObservableCollection<SupplierReportItem>();
+            foreach (var group in groupedBySupplierId.OrderBy(g => g.SupplierId))
+            {
+                var supplier = await _supplierService.GetSupplierByIdAsync(group.SupplierId);
+                reportItems.Add(new SupplierReportItem
+                {
+                    SupplierName = supplier?.CompanyName ?? "Неизвестный поставщик",
+                    TotalPaid = group.TotalPaid
+                });
+            }
+
+            SupplierReportItems = new ObservableCollection<SupplierReportItem>(reportItems.OrderBy(s => s.SupplierName));
+
 
             if (SupplierReportItems.Count == 0)
             {

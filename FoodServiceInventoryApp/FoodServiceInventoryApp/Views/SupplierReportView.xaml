@@ -33,7 +33,7 @@
                   CanUserAddRows="False" CanUserDeleteRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Поставщик" Binding="{Binding SupplierName}" Width="*"/>
-                <DataGridTextColumn Header="Сумма выплат" Binding="{Binding TotalPaid, StringFormat='{}{0:C}'}" Width="Auto"/>
+                <DataGridTextColumn Header="Сумма выплат" Binding="{Binding TotalPaid, StringFormat='{}{0:C}', ConverterCulture='ru-RU'}" Width="130"/>
             </DataGrid.Columns>
         </DataGrid>
 

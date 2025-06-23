@@ -1,8 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FoodServiceInventoryApp.Models;
+using FoodServiceInventoryApp.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -20,10 +23,14 @@ namespace FoodServiceInventoryApp.ViewModels
             public decimal EstimatedCost { get; set; }
         }
 
+        private readonly ISupplierService _supplierService;
+        private readonly IProductSupplyHistoryService _productSupplyHistoryService;
+        private readonly IProductService _productService;
+
         [ObservableProperty]
-        private ObservableCollection<string> _suppliers;
+        private ObservableCollection<Supplier> _suppliers;
         [ObservableProperty]
-        private string _selectedSupplierFilter;
+        private Supplier _selectedSupplierFilter;
 
         [ObservableProperty]
         private ObservableCollection<PurchasePlanItem> _purchasePlanItems;
@@ -32,13 +39,44 @@ namespace FoodServiceInventoryApp.ViewModels
         private string _errorMessage;
 
         public ICommand GeneratePlanCommand { get; }
+        public IAsyncRelayCommand LoadSuppliersCommand { get; }
 
-        public PurchasePlanVM()
+        public PurchasePlanVM(ISupplierService supplierService, IProductSupplyHistoryService productSupplyHistoryService, IProductService productService)
         {
-            Suppliers = new ObservableCollection<string> { "Все", "Поставщик А", "Поставщик Б" };
-            SelectedSupplierFilter = "Все";
+            _supplierService = supplierService;
+            _productSupplyHistoryService = productSupplyHistoryService;
+            _productService = productService;
+
+            Suppliers = new ObservableCollection<Supplier>();
             PurchasePlanItems = new ObservableCollection<PurchasePlanItem>();
+            ErrorMessage = string.Empty;
+
             GeneratePlanCommand = new AsyncRelayCommand(ExecuteGeneratePlanAsync);
+            LoadSuppliersCommand = new AsyncRelayCommand(LoadSuppliersAsync);
+
+            LoadSuppliersCommand.Execute(null);
+        }
+
+        private async Task LoadSuppliersAsync()
+        {
+            Suppliers.Clear();
+            Suppliers.Add(new Supplier { SupplierId = 0, CompanyName = "Все" });
+
+            var allSuppliers = await _supplierService.GetAllSuppliersAsync();
+
+            if (allSuppliers != null)
+            {
+                foreach (var s in allSuppliers.OrderBy(s => s.CompanyName))
+                {
+                    Suppliers.Add(s);
+                }
+            }
+            else
+            {
+                Debug.WriteLine("Предупреждение: _supplierService.GetAllSuppliersAsync() вернул null.");
+            }
+
+            SelectedSupplierFilter = Suppliers.FirstOrDefault();
         }
 
         private async Task ExecuteGeneratePlanAsync()
@@ -46,64 +84,107 @@ namespace FoodServiceInventoryApp.ViewModels
             ErrorMessage = string.Empty;
             PurchasePlanItems.Clear();
 
-            var productUsageData = new List<PurchaseCostReportVM.ReportDetailItem>
-            {
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(5), ProductName = "Молоко", SupplierName = "Поставщик А", SuppliedQuantity = 5.0M, SupplyUnitPrice = 1.2M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(10), ProductName = "Молоко", SupplierName = "Поставщик А", SuppliedQuantity = 7.0M, SupplyUnitPrice = 1.2M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(15), ProductName = "Хлеб", SupplierName = "Поставщик Б", SuppliedQuantity = 10.0M, SupplyUnitPrice = 0.8M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(20), ProductName = "Хлеб", SupplierName = "Поставщик Б", SuppliedQuantity = 8.0M, SupplyUnitPrice = 0.8M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(25), ProductName = "Мука", SupplierName = "Поставщик А", SuppliedQuantity = 20.0M, SupplyUnitPrice = 0.9M },
-                new PurchaseCostReportVM.ReportDetailItem { SupplyDate = DateTime.Now.AddMonths(-1).AddDays(28), ProductName = "Салфетки", SupplierName = "Поставщик Б", SuppliedQuantity = 50.0M, SupplyUnitPrice = 0.03M }
-            };
+            Debug.WriteLine("--- Начинаем формирование плана закупок ---");
 
-            var currentStock = new List<Product>
-            {
-                new Product { ProductName = "Молоко", Quantity = 2.0M, UnitOfMeasure = "литр", UnitPrice = 1.2M, LastSupplyDate = DateTime.Now, Category = new Models.Category{CategoryName="Продукты"}},
-                new Product { ProductName = "Хлеб", Quantity = 3.0M, UnitOfMeasure = "буханка", UnitPrice = 0.8M, LastSupplyDate = DateTime.Now, Category = new Models.Category{CategoryName="Продукты"}},
-                new Product { ProductName = "Мука", Quantity = 5.0M, UnitOfMeasure = "кг", UnitPrice = 0.9M, LastSupplyDate = DateTime.Now, Category = new Models.Category{CategoryName="Продукты"}},
-                new Product { ProductName = "Салфетки", Quantity = 10.0M, UnitOfMeasure = "шт.", UnitPrice = 0.03M, LastSupplyDate = DateTime.Now, Category = new Models.Category{CategoryName="Принадлежности"}}
-            };
+            DateTime endDate = DateTime.Now.Date.AddDays(1).AddTicks(-1);
+            DateTime startDate = endDate.AddMonths(-1).Date;
 
-            var monthlyUsage = productUsageData
-                .Where(u => u.SupplyDate >= DateTime.Now.AddMonths(-1) && u.SupplyDate <= DateTime.Now)
-                .GroupBy(u => new { u.ProductName, u.SupplierName })
+            Debug.WriteLine($"Период анализа: с {startDate.ToShortDateString()} по {endDate.ToShortDateString()}");
+
+            var allSupplyHistory = await _productSupplyHistoryService.GetSupplyRecordsFilteredAsync(
+                startDate: startDate,
+                endDate: endDate
+            );
+
+            if (allSupplyHistory == null || !allSupplyHistory.Any())
+            {
+                ErrorMessage = "Данные о прошлых поставках для расчета плана не найдены. Убедитесь, что в БД есть записи о поставках за последний месяц.";
+                Debug.WriteLine("Ошибка: Нет данных о прошлых поставках.");
+                return;
+            }
+            Debug.WriteLine($"Найдено {allSupplyHistory.Count()} записей истории поставок.");
+
+            var monthlyUsage = allSupplyHistory
+                .GroupBy(s => new { s.ProductId, s.SupplierId })
                 .Select(g => new
                 {
-                    g.Key.ProductName,
-                    g.Key.SupplierName,
+                    ProductId = g.Key.ProductId,
+                    SupplierId = g.Key.SupplierId,
                     TotalSuppliedQuantity = g.Sum(x => x.SuppliedQuantity),
                     AverageUnitPrice = g.Average(x => x.SupplyUnitPrice)
                 }).ToList();
+
+            Debug.WriteLine($"Сгруппировано {monthlyUsage.Count} уникальных комбинаций Продукт/Поставщик.");
+
+            var currentStock = (await _productService.GetAllProductsAsync())?.ToList();
+
+            if (currentStock == null || !currentStock.Any())
+            {
+                ErrorMessage = "Данные о текущих остатках продуктов не найдены. Убедитесь, что в БД есть продукты.";
+                Debug.WriteLine("Ошибка: Нет данных о текущих остатках продуктов.");
+                return;
+            }
+            Debug.WriteLine($"Найдено {currentStock.Count} продуктов в текущем остатке.");
 
             var planItems = new List<PurchasePlanItem>();
 
             foreach (var usage in monthlyUsage)
             {
-                if (SelectedSupplierFilter != "Все" && usage.SupplierName != SelectedSupplierFilter)
+                var supplier = await _supplierService.GetSupplierByIdAsync(usage.SupplierId);
+                var product = await _productService.GetProductByIdAsync(usage.ProductId);
+
+                if (supplier == null || product == null)
                 {
+                    Debug.WriteLine($"Пропуск записи: не удалось найти поставщика (ID: {usage.SupplierId}) или продукт (ID: {usage.ProductId}).");
                     continue;
                 }
 
-                var currentProductStock = currentStock.FirstOrDefault(s => s.ProductName == usage.ProductName);
+                if (SelectedSupplierFilter?.SupplierId != 0 && usage.SupplierId != SelectedSupplierFilter?.SupplierId)
+                {
+                    Debug.WriteLine($"Пропуск записи для {product.ProductName} от {supplier.CompanyName}: не соответствует выбранному фильтру поставщика.");
+                    continue;
+                }
+
+                var currentProductStock = currentStock.FirstOrDefault(s => s.ProductId == product.ProductId);
+
                 if (currentProductStock != null)
                 {
-                    decimal recommendedQuantity = 0;
+                    decimal recommendedQuantity = usage.TotalSuppliedQuantity;
+
                     if (currentProductStock.Quantity < usage.TotalSuppliedQuantity)
                     {
                         recommendedQuantity = (usage.TotalSuppliedQuantity * 1.5M) - currentProductStock.Quantity;
+                    }
+
+                    if (recommendedQuantity < 1M && usage.TotalSuppliedQuantity > 0)
+                    {
+                        recommendedQuantity = 1M;
+                    }
+                    else if (recommendedQuantity < 0.1M)
+                    {
+                        recommendedQuantity = 0;
                     }
 
                     if (recommendedQuantity > 0)
                     {
                         planItems.Add(new PurchasePlanItem
                         {
-                            SupplierName = usage.SupplierName,
-                            ProductName = usage.ProductName,
+                            SupplierName = supplier.CompanyName,
+                            ProductName = product.ProductName,
                             RecommendedQuantity = recommendedQuantity,
-                            UnitOfMeasure = currentProductStock.UnitOfMeasure,
+                            UnitOfMeasure = product.UnitOfMeasure,
                             EstimatedCost = recommendedQuantity * usage.AverageUnitPrice
                         });
+                        Debug.WriteLine($"Добавлен в план: {product.ProductName} ({recommendedQuantity:N2} {product.UnitOfMeasure}) от {supplier.CompanyName}. Расчетная стоимость: {recommendedQuantity * usage.AverageUnitPrice:C}");
                     }
+                    else
+                    {
+                        Debug.WriteLine($"Пропуск {product.ProductName} от {supplier.CompanyName}: рекомендованное количество <= 0 (текущий запас {currentProductStock.Quantity:N2}, потребление {usage.TotalSuppliedQuantity:N2})");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"Пропуск {product.ProductName}: не найдено текущих данных по остаткам (ProductId: {product.ProductId}).");
                 }
             }
 
@@ -111,7 +192,12 @@ namespace FoodServiceInventoryApp.ViewModels
 
             if (PurchasePlanItems.Count == 0)
             {
-                ErrorMessage = "План закупок для выбранных критериев не сформирован. Возможно, запасы достаточны или нет данных о потреблении.";
+                ErrorMessage = "План закупок для выбранных критериев не сформирован. Возможно, запасы достаточны, нет данных о потреблении или не удалось найти связанные продукты/поставщиков.";
+                Debug.WriteLine("Завершено: План закупок пуст.");
+            }
+            else
+            {
+                Debug.WriteLine($"Завершено: Сформировано {PurchasePlanItems.Count} позиций в плане закупок.");
             }
         }
     }

@@ -22,7 +22,7 @@
             <TextBlock Text="Выберите поставщика:" VerticalAlignment="Center" Margin="0 0 10 0"/>
             <ComboBox ItemsSource="{Binding Suppliers}"
                       SelectedItem="{Binding SelectedSupplierFilter}"
-                      Width="200" Margin="0 0 20 0"/>
+                      DisplayMemberPath="CompanyName"  Width="200" Margin="0 0 20 0"/>
 
             <ui:Button Content="Сформировать план" Appearance="Primary" Command="{Binding GeneratePlanCommand}"/>
         </StackPanel>
@@ -35,7 +35,7 @@
                 <DataGridTextColumn Header="Продукт" Binding="{Binding ProductName}" Width="*"/>
                 <DataGridTextColumn Header="Рекомендуемый объем" Binding="{Binding RecommendedQuantity, StringFormat='{}{0:N2}'}" Width="Auto"/>
                 <DataGridTextColumn Header="Ед. Изм." Binding="{Binding UnitOfMeasure}" Width="Auto"/>
-                <DataGridTextColumn Header="Примерная стоимость" Binding="{Binding EstimatedCost, StringFormat='{}{0:C}'}" Width="Auto"/>
+                <DataGridTextColumn Header="Примерная стоимость" Binding="{Binding EstimatedCost, StringFormat='{}{0:C}', ConverterCulture='ru-RU'}" Width="Auto"/>
             </DataGrid.Columns>
         </DataGrid>
 
