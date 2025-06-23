@@ -11,5 +11,6 @@ namespace FoodServiceInventoryApp.Services
     {
         void ShowMainWindow();
         void CloseLoginWindow(Window loginWindow);
+
     }
 }

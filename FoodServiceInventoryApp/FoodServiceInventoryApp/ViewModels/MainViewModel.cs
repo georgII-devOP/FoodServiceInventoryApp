@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Windows.Input;
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
 
 namespace FoodServiceInventoryApp.ViewModels
 {
@@ -19,6 +20,7 @@ namespace FoodServiceInventoryApp.ViewModels
         public ICommand NavigateToPurchaseCostReportViewCommand { get; }
         public ICommand NavigateToSupplierReportViewCommand { get; }
         public ICommand NavigateToPurchasePlanViewCommand { get; }
+        public ICommand ExitApplicationCommand { get; }
 
         public MainViewModel(IServiceProvider serviceProvider)
         {
@@ -30,13 +32,23 @@ namespace FoodServiceInventoryApp.ViewModels
             NavigateToPurchaseCostReportViewCommand = new RelayCommand(ExecuteNavigateToPurchaseCostReportView);
             NavigateToSupplierReportViewCommand = new RelayCommand(ExecuteNavigateToSupplierReportView);
             NavigateToPurchasePlanViewCommand = new RelayCommand(ExecuteNavigateToPurchasePlanView);
+            ExitApplicationCommand = new RelayCommand(ExecuteExitApplication);
 
             ExecuteNavigateToProductInputView();
         }
 
+        public async void NavigateToProductInputForEdit(int productId)
+        {
+            var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
+            await productInputVm.LoadProductForEdit(productId);
+            CurrentViewModel = productInputVm;
+        }
+
         private void ExecuteNavigateToProductInputView()
         {
-            CurrentViewModel = _serviceProvider.GetRequiredService<ProductInputVM>();
+            var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
+            productInputVm.ResetForm();
+            CurrentViewModel = productInputVm;
         }
 
         private void ExecuteNavigateToProductRemovalView()
@@ -62,6 +74,11 @@ namespace FoodServiceInventoryApp.ViewModels
         private void ExecuteNavigateToPurchasePlanView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<PurchasePlanVM>();
+        }
+
+        private void ExecuteExitApplication()
+        {
+            Application.Current.Shutdown();
         }
     }
 }

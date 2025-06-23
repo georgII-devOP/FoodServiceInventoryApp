@@ -7,7 +7,7 @@
         xmlns:views="clr-namespace:FoodServiceInventoryApp.Views"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="Food Service Inventory App" Height="768" Width="1024"
+        Title="Food Service Inventory App" Height="768" Width="1400"
         WindowStartupLocation="CenterScreen">
 
     <!--<Window.DataContext>
@@ -48,6 +48,7 @@
             <ui:Button Content="Отчет по стоимости закупок" Appearance="Primary" Margin="5" Command="{Binding NavigateToPurchaseCostReportViewCommand}"/>
             <ui:Button Content="Отчет по поставщикам" Appearance="Primary" Margin="5" Command="{Binding NavigateToSupplierReportViewCommand}"/>
             <ui:Button Content="План закупок" Appearance="Primary" Margin="5" Command="{Binding NavigateToPurchasePlanViewCommand}"/>
+            <ui:Button Content="Выход" Appearance="Primary" Margin="5 5 0 5" Command="{Binding ExitApplicationCommand}"/>
         </StackPanel>
 
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>

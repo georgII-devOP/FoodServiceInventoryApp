@@ -1,64 +1,101 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows.Input;
+using FoodServiceInventoryApp.Models;
+using FoodServiceInventoryApp.Services;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Windows;
 using System;
 
 namespace FoodServiceInventoryApp.ViewModels
 {
     public partial class ProductRemovalVM : ObservableObject
     {
-        [ObservableProperty]
-        private string _productNameToRemove;
+        private readonly IProductService _productService;
 
         [ObservableProperty]
-        private string _quantityToRemove;
+        private ObservableCollection<Product> _products;
 
         [ObservableProperty]
-        private string _unitOfMeasureToRemove;
+        private Product _selectedProduct;
 
         [ObservableProperty]
-        private string _errorMessage;
+        private decimal _quantityToDeduct;
 
-        [ObservableProperty]
-        private string _successMessage;
+        public IAsyncRelayCommand LoadProductsCommand { get; }
+        public IAsyncRelayCommand DeductProductQuantityCommand { get; }
 
-        public ICommand RemoveProductCommand { get; }
-        public ICommand CancelCommand { get; }
-
-        public ProductRemovalVM()
+        public ProductRemovalVM(IProductService productService)
         {
-            RemoveProductCommand = new AsyncRelayCommand(ExecuteRemoveProductAsync);
-            CancelCommand = new RelayCommand(ExecuteCancel);
+            _productService = productService;
+            Products = new ObservableCollection<Product>();
+
+            LoadProductsCommand = new AsyncRelayCommand(LoadProductsAsync);
+            DeductProductQuantityCommand = new AsyncRelayCommand(DeductProductQuantityAsync, CanDeductProductQuantity);
+
+            PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(SelectedProduct) || e.PropertyName == nameof(QuantityToDeduct))
+                {
+                    DeductProductQuantityCommand.NotifyCanExecuteChanged();
+                }
+            };
+
+            LoadProductsCommand.Execute(null);
         }
 
-        private async Task ExecuteRemoveProductAsync()
+        private async Task LoadProductsAsync()
         {
-            ErrorMessage = string.Empty;
-            SuccessMessage = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(ProductNameToRemove) || string.IsNullOrWhiteSpace(QuantityToRemove))
+            Products.Clear();
+            var productsFromDb = await _productService.GetAllProductsAsync();
+            foreach (var product in productsFromDb)
             {
-                ErrorMessage = "Пожалуйста, укажите название и количество для удаления.";
+                Products.Add(product);
+            }
+        }
+
+        private bool CanDeductProductQuantity()
+        {
+            return SelectedProduct != null &&
+                   QuantityToDeduct > 0 &&
+                   QuantityToDeduct <= SelectedProduct.Quantity;
+        }
+
+        private async Task DeductProductQuantityAsync()
+        {
+            if (!CanDeductProductQuantity())
+            {
+                if (SelectedProduct == null)
+                {
+                    MessageBox.Show("Пожалуйста, выберите продукт для списания.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else if (QuantityToDeduct <= 0)
+                {
+                    MessageBox.Show("Количество для списания должно быть больше нуля.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else if (QuantityToDeduct > SelectedProduct.Quantity)
+                {
+                    MessageBox.Show("Количество для списания превышает доступный остаток.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
                 return;
             }
 
-            SuccessMessage = $"Запрос на удаление: {QuantityToRemove} {UnitOfMeasureToRemove} из {ProductNameToRemove}";
-            Console.WriteLine($"Removing: {QuantityToRemove} {UnitOfMeasureToRemove} of {ProductNameToRemove}");
+            var result = MessageBox.Show($"Вы уверены, что хотите списать {QuantityToDeduct} {SelectedProduct.UnitOfMeasure} продукта '{SelectedProduct.ProductName}'?", "Подтвердите списание", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-            ProductNameToRemove = string.Empty;
-            QuantityToRemove = string.Empty;
-            UnitOfMeasureToRemove = string.Empty;
-        }
-
-        private void ExecuteCancel()
-        {
-            ErrorMessage = string.Empty;
-            SuccessMessage = string.Empty;
-            ProductNameToRemove = string.Empty;
-            QuantityToRemove = string.Empty;
-            UnitOfMeasureToRemove = string.Empty;
-            Console.WriteLine("Отмена удаления продукта.");
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    await _productService.UpdateProductQuantityAsync(SelectedProduct.ProductId, -QuantityToDeduct);
+                    MessageBox.Show("Количество продукта успешно списано!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    QuantityToDeduct = 0;
+                    await LoadProductsAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Произошла ошибка при списании количества продукта: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
     }
 }

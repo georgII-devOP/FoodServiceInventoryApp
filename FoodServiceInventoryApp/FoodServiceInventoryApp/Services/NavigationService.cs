@@ -25,10 +25,5 @@ namespace FoodServiceInventoryApp.Services
         {
             loginWindow.Close();
         }
-        public interface INavigationService
-        {
-            void ShowMainWindow();
-            void CloseLoginWindow(Window loginWindow);
-        }
     }
 }
