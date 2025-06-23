@@ -37,6 +37,8 @@ namespace FoodServiceInventoryApp
                     services.AddSingleton<LoginWindow>();
 
                     services.AddSingleton<MainWindow>();
+
+                    services.AddSingleton<INavigationService, NavigationService>();
                 })
                 .Build();
         }
