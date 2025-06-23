@@ -3,11 +3,53 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FoodServiceInventoryApp"
+        xmlns:viewmodels="clr-namespace:FoodServiceInventoryApp.ViewModels"
+        xmlns:views="clr-namespace:FoodServiceInventoryApp.Views"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterScreen"
-        Title="MainWindow" Height="800" Width="1200">
-    <Grid>
+        Title="Food Service Inventory App" Height="768" Width="1024"
+        WindowStartupLocation="CenterScreen">
 
+    <!--<Window.DataContext>
+        <viewmodels:MainViewModel d:IsDataSource="True"/>
+    </Window.DataContext>-->
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type viewmodels:ProductInputVM}">
+            <views:ProductInputView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:ProductRemovalVM}">
+            <views:ProductRemovalView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:StockReportVM}">
+            <views:StockReportView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:PurchaseCostReportVM}">
+            <views:PurchaseCostReportView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:SupplierReportVM}">
+            <views:SupplierReportView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:PurchasePlanVM}">
+            <views:PurchasePlanView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10" HorizontalAlignment="Center">
+            <ui:Button Content="Ввод продукта" Appearance="Primary" Margin="5" Command="{Binding NavigateToProductInputViewCommand}"/>
+            <ui:Button Content="Удаление продукта" Appearance="Primary" Margin="5" Command="{Binding NavigateToProductRemovalViewCommand}"/>
+            <ui:Button Content="Отчет по остаткам" Appearance="Primary" Margin="5" Command="{Binding NavigateToStockReportViewCommand}"/>
+            <ui:Button Content="Отчет по стоимости закупок" Appearance="Primary" Margin="5" Command="{Binding NavigateToPurchaseCostReportViewCommand}"/>
+            <ui:Button Content="Отчет по поставщикам" Appearance="Primary" Margin="5" Command="{Binding NavigateToSupplierReportViewCommand}"/>
+            <ui:Button Content="План закупок" Appearance="Primary" Margin="5" Command="{Binding NavigateToPurchasePlanViewCommand}"/>
+        </StackPanel>
+
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
     </Grid>
 </Window>

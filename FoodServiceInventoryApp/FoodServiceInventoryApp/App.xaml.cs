@@ -33,10 +33,22 @@ namespace FoodServiceInventoryApp
                     services.AddSingleton<AuthenticationService>();
 
                     services.AddTransient<LoginVM>();
+                    services.AddSingleton<MainViewModel>();
+                    services.AddTransient<ProductInputVM>();
+                    services.AddTransient<ProductRemovalVM>();
+                    services.AddTransient<StockReportVM>();
+                    services.AddTransient<PurchaseCostReportVM>();
+                    services.AddTransient<SupplierReportVM>();
+                    services.AddTransient<PurchasePlanVM>();
 
                     services.AddSingleton<LoginWindow>();
-
                     services.AddSingleton<MainWindow>();
+                    services.AddTransient<ProductInputView>();
+                    services.AddTransient<ProductRemovalView>();
+                    services.AddTransient<StockReportView>();
+                    services.AddTransient<PurchaseCostReportView>();
+                    services.AddTransient<SupplierReportView>();
+                    services.AddTransient<PurchasePlanView>();
 
                     services.AddSingleton<INavigationService, NavigationService>();
                 })

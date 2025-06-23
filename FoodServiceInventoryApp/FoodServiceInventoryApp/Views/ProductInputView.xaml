@@ -1,12 +1,54 @@
 ﻿<UserControl x:Class="FoodServiceInventoryApp.Views.ProductInputView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:FoodServiceInventoryApp.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-            
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:viewmodels="clr-namespace:FoodServiceInventoryApp.ViewModels"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             Background="White"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="800">
+
+    <!--<UserControl.DataContext>
+        <viewmodels:ProductInputVM d:IsDataSource="True"/>
+    </UserControl.DataContext>-->
+
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock Text="Добавить новый продукт" FontSize="24" FontWeight="Bold" Margin="0 0 0 20"/>
+
+            <ui:TextBox PlaceholderText="Название" Margin="0 0 0 10"
+                        Text="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <TextBlock Text="Дата поставки" Margin="0 0 0 5"/>
+            <DatePicker SelectedDate="{Binding DeliveryDate}" Margin="0 0 0 10"/>
+
+            <ui:TextBox PlaceholderText="Количество" Margin="0 0 0 10"
+                        Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <ui:TextBox PlaceholderText="Ед. Измерения" Margin="0 0 0 10"
+                        Text="{Binding UnitOfMeasure, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <TextBlock Text="Категория" Margin="0 0 0 5"/>
+            <ComboBox ItemsSource="{Binding Categories}"
+                         SelectedItem="{Binding SelectedCategory}"
+                         Margin="0 0 0 10"/>
+
+            <TextBlock Text="Фирма Поставщика" Margin="0 0 0 5"/>
+            <ComboBox ItemsSource="{Binding Suppliers}"
+                         SelectedItem="{Binding SelectedSupplier}"
+                         Margin="0 0 0 10"/>
+
+            <ui:TextBox PlaceholderText="Цена за единицу" Margin="0 0 0 10"
+                        Text="{Binding PricePerUnit, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0 10 0 0"/>
+            <TextBlock Text="{Binding SuccessMessage}" Foreground="Green" Margin="0 10 0 0"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 20 0 0">
+                <ui:Button Content="Сохранить" Appearance="Primary" Margin="0 0 10 0" Command="{Binding SaveProductCommand}"/>
+                <ui:Button Content="Отмена" Command="{Binding CancelCommand}"/>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </UserControl>
