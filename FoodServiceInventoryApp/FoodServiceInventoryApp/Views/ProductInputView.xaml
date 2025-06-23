@@ -3,14 +3,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:FoodServiceInventoryApp.Converters"
              xmlns:viewmodels="clr-namespace:FoodServiceInventoryApp.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400">
+
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
     </UserControl.Resources>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -59,10 +65,23 @@
         <TextBlock Text="Цена за единицу (₽):" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="5"/>
         <TextBox Text="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Grid.Row="5" Grid.Column="1" Margin="5"/>
 
-        <TextBlock Text="Дата последней поставки:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="5"/>
+        <TextBlock Text="Дата поставки:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="5"/>
         <DatePicker SelectedDate="{Binding LastSupplyDate}" Grid.Row="6" Grid.Column="1" Margin="5"/>
 
-        <Button Grid.Row="7" Grid.ColumnSpan="2"
+        <TextBlock Text="Поставщик:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="5"
+                   Visibility="{Binding IsEditMode, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+        <ComboBox ItemsSource="{Binding Suppliers}"
+                  SelectedItem="{Binding SelectedSupplier}"
+                  DisplayMemberPath="CompanyName"
+                  Grid.Row="7" Grid.Column="1" Margin="5"
+                  Visibility="{Binding IsEditMode, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+
+        <TextBlock Text="* При добавлении продукта 'Количество', 'Цена за единицу' и 'Дата поставки' относятся к первой поставке."
+                   Grid.Row="8" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,10,5,5"
+                   FontSize="10" FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                   Visibility="{Binding IsEditMode, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+
+        <Button Grid.Row="9" Grid.ColumnSpan="2"
                 HorizontalAlignment="Center" Margin="0,20,0,0" Padding="10,5"
                 Command="{Binding SaveProductCommand}">
             <Button.Style>
@@ -76,5 +95,11 @@
                 </Style>
             </Button.Style>
         </Button>
+
+        <TextBlock Text="{Binding ErrorMessage}" Grid.Row="10" Grid.ColumnSpan="2" Foreground="Red" HorizontalAlignment="Center" Margin="5"
+                   Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+        <TextBlock Text="{Binding SuccessMessage}" Grid.Row="10" Grid.ColumnSpan="2" Foreground="Green" HorizontalAlignment="Center" Margin="5"
+                   Visibility="{Binding SuccessMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+
     </Grid>
 </UserControl>

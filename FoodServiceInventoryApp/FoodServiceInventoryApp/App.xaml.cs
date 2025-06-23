@@ -38,7 +38,6 @@ namespace FoodServiceInventoryApp
                     services.AddTransient<ICategoryService, CategoryService>();
                     services.AddTransient<ISupplierService, SupplierService>();
                     services.AddTransient<IProductSupplyHistoryService, ProductSupplyHistoryService>();
-                    services.AddTransient<IUserService, UserServiceStub>();
 
                     services.AddTransient<LoginVM>();
                     services.AddSingleton<MainViewModel>();
@@ -93,15 +92,6 @@ namespace FoodServiceInventoryApp
                 await _host.StopAsync();
             }
             base.OnExit(e);
-        }
-        public class UserServiceStub : IUserService
-        {
-            public Task<FoodServiceInventoryApp.Models.User> GetUserByUsernameAsync(string username) => Task.FromResult<FoodServiceInventoryApp.Models.User>(null);
-            public Task<IEnumerable<FoodServiceInventoryApp.Models.User>> GetAllUsersAsync() => Task.FromResult<IEnumerable<FoodServiceInventoryApp.Models.User>>(new List<FoodServiceInventoryApp.Models.User>());
-            public Task AddUserAsync(FoodServiceInventoryApp.Models.User user) => Task.CompletedTask;
-            public Task UpdateUserAsync(FoodServiceInventoryApp.Models.User user) => Task.CompletedTask;
-            public Task DeleteUserAsync(int userId) => Task.CompletedTask;
-            public Task<bool> VerifyPasswordAsync(string username, string password) => Task.FromResult(false);
         }
     }
 }
