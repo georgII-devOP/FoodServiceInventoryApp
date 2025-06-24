@@ -4,7 +4,6 @@ using FoodServiceInventoryApp.Models;
 using FoodServiceInventoryApp.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows;
 using System;
 
 namespace FoodServiceInventoryApp.ViewModels
@@ -12,6 +11,7 @@ namespace FoodServiceInventoryApp.ViewModels
     public partial class ProductRemovalVM : ObservableObject
     {
         private readonly IProductService _productService;
+        private readonly IMessageService _messageService;
 
         [ObservableProperty]
         private ObservableCollection<Product> _products;
@@ -25,9 +25,10 @@ namespace FoodServiceInventoryApp.ViewModels
         public IAsyncRelayCommand LoadProductsCommand { get; }
         public IAsyncRelayCommand DeductProductQuantityCommand { get; }
 
-        public ProductRemovalVM(IProductService productService)
+        public ProductRemovalVM(IProductService productService, IMessageService messageService)
         {
             _productService = productService;
+            _messageService = messageService;
             Products = new ObservableCollection<Product>();
 
             LoadProductsCommand = new AsyncRelayCommand(LoadProductsAsync);
@@ -67,33 +68,35 @@ namespace FoodServiceInventoryApp.ViewModels
             {
                 if (SelectedProduct == null)
                 {
-                    MessageBox.Show("Пожалуйста, выберите продукт для списания.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _messageService.ShowMessage("Пожалуйста, выберите продукт для списания.", "Ошибка", MessageType.Warning);
                 }
                 else if (QuantityToDeduct <= 0)
                 {
-                    MessageBox.Show("Количество для списания должно быть больше нуля.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _messageService.ShowMessage("Количество для списания должно быть больше нуля.", "Ошибка", MessageType.Warning);
                 }
                 else if (QuantityToDeduct > SelectedProduct.Quantity)
                 {
-                    MessageBox.Show("Количество для списания превышает доступный остаток.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _messageService.ShowMessage("Количество для списания превышает доступный остаток.", "Ошибка", MessageType.Warning);
                 }
                 return;
             }
+            var confirmationResult = _messageService.ShowConfirmation(
+                $"Вы уверены, что хотите списать {QuantityToDeduct} {SelectedProduct.UnitOfMeasure} продукта '{SelectedProduct.ProductName}'?",
+                "Подтвердите списание"
+            );
 
-            var result = MessageBox.Show($"Вы уверены, что хотите списать {QuantityToDeduct} {SelectedProduct.UnitOfMeasure} продукта '{SelectedProduct.ProductName}'?", "Подтвердите списание", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            if (confirmationResult)
             {
                 try
                 {
                     await _productService.UpdateProductQuantityAsync(SelectedProduct.ProductId, -QuantityToDeduct);
-                    MessageBox.Show("Количество продукта успешно списано!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    _messageService.ShowMessage("Количество продукта успешно списано!", "Успех", MessageType.Information); // <-- ИЗМЕНЕНО
                     QuantityToDeduct = 0;
                     await LoadProductsAsync();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Произошла ошибка при списании количества продукта: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage($"Произошла ошибка при списании количества продукта: {ex.Message}", "Ошибка", MessageType.Error); // <-- ИЗМЕНЕНО
                 }
             }
         }

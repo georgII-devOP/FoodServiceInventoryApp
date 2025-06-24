@@ -38,6 +38,7 @@ namespace FoodServiceInventoryApp
                     services.AddTransient<ICategoryService, CategoryService>();
                     services.AddTransient<ISupplierService, SupplierService>();
                     services.AddTransient<IProductSupplyHistoryService, ProductSupplyHistoryService>();
+                    services.AddSingleton<IMessageService, MessageBoxService>();
 
                     services.AddTransient<LoginVM>();
                     services.AddSingleton<MainViewModel>();

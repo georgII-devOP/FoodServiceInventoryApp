@@ -4,8 +4,6 @@ using FoodServiceInventoryApp.Models;
 using FoodServiceInventoryApp.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows;
-using FoodServiceInventoryApp.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -16,6 +14,7 @@ namespace FoodServiceInventoryApp.ViewModels
         private readonly IProductService _productService;
         private readonly IServiceProvider _serviceProvider;
         private readonly MainViewModel _mainViewModel;
+        private readonly IMessageService _messageService;
 
         [ObservableProperty]
         private ObservableCollection<Product> _products;
@@ -26,11 +25,12 @@ namespace FoodServiceInventoryApp.ViewModels
         public IAsyncRelayCommand LoadProductsCommand { get; }
         public IAsyncRelayCommand EditProductCommand { get; }
 
-        public StockReportVM(IProductService productService, IServiceProvider serviceProvider, MainViewModel mainViewModel)
+        public StockReportVM(IProductService productService, IServiceProvider serviceProvider, MainViewModel mainViewModel, IMessageService messageService)
         {
             _productService = productService;
             _serviceProvider = serviceProvider;
             _mainViewModel = mainViewModel;
+            _messageService = messageService;
 
             Products = new ObservableCollection<Product>();
 
@@ -67,7 +67,7 @@ namespace FoodServiceInventoryApp.ViewModels
         {
             if (SelectedProduct == null)
             {
-                MessageBox.Show("Пожалуйста, выберите продукт для редактирования.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _messageService.ShowMessage("Пожалуйста, выберите продукт для редактирования.", "Ошибка", MessageType.Warning);
                 return;
             }
             _mainViewModel.NavigateToProductInputForEdit(SelectedProduct.ProductId);

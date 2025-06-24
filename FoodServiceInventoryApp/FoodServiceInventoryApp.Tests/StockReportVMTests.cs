@@ -19,6 +19,7 @@ namespace FoodServiceInventoryApp.Tests
         private readonly Mock<ISupplierService> _mockSupplierService;
         private readonly Mock<IProductSupplyHistoryService> _mockProductSupplyHistoryService;
         private readonly Mock<IServiceProvider> _mockServiceProvider;
+        private readonly Mock<IMessageService> _mockMessageService;
 
         private readonly Mock<ProductInputVM> _mockProductInputVM;
         private readonly Mock<ProductRemovalVM> _mockProductRemovalVM;
@@ -37,6 +38,17 @@ namespace FoodServiceInventoryApp.Tests
             _mockSupplierService = new Mock<ISupplierService>();
             _mockProductSupplyHistoryService = new Mock<IProductSupplyHistoryService>();
             _mockServiceProvider = new Mock<IServiceProvider>();
+            _mockMessageService = new Mock<IMessageService>();
+
+            _mockMessageService.Setup(m => m.ShowMessage(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<MessageType>()
+            )).Verifiable();
+            _mockMessageService.Setup(m => m.ShowConfirmation(
+                It.IsAny<string>(),
+                It.IsAny<string>()
+            )).Returns(true);
 
             _mockProductService.Setup(s => s.GetAllProductsAsync()).ReturnsAsync(new List<Product>());
             _mockCategoryService.Setup(s => s.GetAllCategoriesAsync()).ReturnsAsync(new List<Category>());
@@ -48,7 +60,8 @@ namespace FoodServiceInventoryApp.Tests
                 _mockProductService.Object,
                 _mockCategoryService.Object,
                 _mockSupplierService.Object,
-                _mockProductSupplyHistoryService.Object
+                _mockProductSupplyHistoryService.Object,
+                _mockMessageService.Object
             )
             { CallBase = true };
 
@@ -58,7 +71,7 @@ namespace FoodServiceInventoryApp.Tests
             Mock.Get(_mockProductInputVM.Object).Setup(x => x.LoadProductForEdit(It.IsAny<int>())).Callback(() => { });
 
 
-            _mockProductRemovalVM = new Mock<ProductRemovalVM>(_mockProductService.Object) { CallBase = true };
+            _mockProductRemovalVM = new Mock<ProductRemovalVM>(_mockProductService.Object, _mockMessageService.Object) { CallBase = true };
             _mockPurchaseCostReportVM = new Mock<PurchaseCostReportVM>(
                 _mockProductSupplyHistoryService.Object, _mockProductService.Object, _mockCategoryService.Object, _mockSupplierService.Object
             )
@@ -86,8 +99,11 @@ namespace FoodServiceInventoryApp.Tests
                 .Callback<int>(productId =>
                 {
                     var productInputVm = _mockServiceProvider.Object.GetService<ProductInputVM>();
-                    Mock.Get(productInputVm).Setup(m => m.LoadProductForEdit(productId)).Returns(Task.CompletedTask).Verifiable();
-                    _mockMainViewModel.Object.CurrentViewModel = productInputVm;
+                    if (productInputVm != null)
+                    {
+                        Mock.Get(productInputVm).Setup(m => m.LoadProductForEdit(productId)).Returns(Task.CompletedTask).Verifiable();
+                        _mockMainViewModel.Object.CurrentViewModel = productInputVm;
+                    }
                 });
 
             _mockServiceProvider.Setup(s => s.GetService(typeof(ProductInputVM))).Returns(_mockProductInputVM.Object);
@@ -96,11 +112,14 @@ namespace FoodServiceInventoryApp.Tests
             _mockServiceProvider.Setup(s => s.GetService(typeof(SupplierReportVM))).Returns(_mockSupplierReportVM.Object);
             _mockServiceProvider.Setup(s => s.GetService(typeof(PurchasePlanVM))).Returns(_mockPurchasePlanVM.Object);
             _mockServiceProvider.Setup(s => s.GetService(typeof(MainViewModel))).Returns(_mockMainViewModel.Object);
+            _mockServiceProvider.Setup(s => s.GetService(typeof(IMessageService))).Returns(_mockMessageService.Object);
+
 
             _sutMock = new Mock<StockReportVM>(
                 _mockProductService.Object,
                 _mockServiceProvider.Object,
-                _mockMainViewModel.Object
+                _mockMainViewModel.Object,
+                _mockMessageService.Object
             );
             _sut = _sutMock.Object;
 
@@ -135,16 +154,28 @@ namespace FoodServiceInventoryApp.Tests
 
             _mockMainViewModel.Verify(m => m.NavigateToProductInputForEdit(selectedProduct.ProductId), Times.Once);
             _mockProductInputVM.Verify(m => m.LoadProductForEdit(selectedProduct.ProductId), Times.Once);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<MessageType>()
+            ), Times.Never);
         }
 
         [Fact]
-        public async Task EditProductCommand_ShouldNotNavigate_WhenNoProductSelected()
+        public async Task EditProductCommand_ShouldDisplayWarning_WhenNoProductSelected()
         {
             _sut.SelectedProduct = null;
 
             await _sut.EditProductCommand.ExecuteAsync(null);
 
             _mockMainViewModel.Verify(m => m.NavigateToProductInputForEdit(It.IsAny<int>()), Times.Never);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                "Пожалуйста, выберите продукт для редактирования.",
+                "Ошибка",
+                MessageType.Warning
+            ), Times.Once);
         }
     }
 }

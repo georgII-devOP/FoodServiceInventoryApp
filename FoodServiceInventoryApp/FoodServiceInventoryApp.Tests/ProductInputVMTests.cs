@@ -18,6 +18,7 @@ namespace FoodServiceInventoryApp.Tests
         private readonly Mock<ICategoryService> _mockCategoryService;
         private readonly Mock<ISupplierService> _mockSupplierService;
         private readonly Mock<IProductSupplyHistoryService> _mockProductSupplyHistoryService;
+        private readonly Mock<IMessageService> _mockMessageService;
 
         private readonly ProductInputVM _sut;
 
@@ -27,6 +28,13 @@ namespace FoodServiceInventoryApp.Tests
             _mockCategoryService = new Mock<ICategoryService>();
             _mockSupplierService = new Mock<ISupplierService>();
             _mockProductSupplyHistoryService = new Mock<IProductSupplyHistoryService>();
+            _mockMessageService = new Mock<IMessageService>();
+
+            _mockMessageService.Setup(m => m.ShowMessage(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<MessageType>()
+            )).Verifiable();
 
             _mockCategoryService.Setup(s => s.GetAllCategoriesAsync())
                                 .ReturnsAsync(new List<Category> { new Category { CategoryId = 1, CategoryName = "Напитки" } });
@@ -37,7 +45,8 @@ namespace FoodServiceInventoryApp.Tests
                 _mockProductService.Object,
                 _mockCategoryService.Object,
                 _mockSupplierService.Object,
-                _mockProductSupplyHistoryService.Object
+                _mockProductSupplyHistoryService.Object,
+                _mockMessageService.Object
             );
         }
 
@@ -59,27 +68,28 @@ namespace FoodServiceInventoryApp.Tests
 
             _mockCategoryService.Setup(s => s.GetAllCategoriesAsync())
                                 .ReturnsAsync(new List<Category> { testCategory });
-            var sutWithCorrectCategories = new ProductInputVM(
-                _mockProductService.Object,
-                _mockCategoryService.Object,
-                _mockSupplierService.Object,
-                _mockProductSupplyHistoryService.Object
-            );
-            await sutWithCorrectCategories.LoadCategoriesCommand.ExecuteAsync(null);
+
+            await _sut.LoadCategoriesCommand.ExecuteAsync(null);
 
 
             _mockProductService.Setup(s => s.GetProductByIdAsync(1)).ReturnsAsync(testProduct);
 
-            await sutWithCorrectCategories.LoadProductForEdit(1);
+            await _sut.LoadProductForEdit(1);
 
-            Assert.True(sutWithCorrectCategories.IsEditMode);
-            Assert.Equal(testProduct.ProductId, sutWithCorrectCategories.ProductId);
-            Assert.Equal(testProduct.ProductName, sutWithCorrectCategories.ProductName);
-            Assert.Equal(testProduct.Quantity, sutWithCorrectCategories.Quantity);
-            Assert.Equal(testProduct.UnitOfMeasure, sutWithCorrectCategories.UnitOfMeasure);
-            Assert.Equal(testProduct.UnitPrice, sutWithCorrectCategories.UnitPrice);
-            Assert.Equal(testProduct.LastSupplyDate, sutWithCorrectCategories.LastSupplyDate);
-            Assert.Equal(testProduct.CategoryId, sutWithCorrectCategories.SelectedCategory.CategoryId);
+            Assert.True(_sut.IsEditMode);
+            Assert.Equal(testProduct.ProductId, _sut.ProductId);
+            Assert.Equal(testProduct.ProductName, _sut.ProductName);
+            Assert.Equal(testProduct.Quantity, _sut.Quantity);
+            Assert.Equal(testProduct.UnitOfMeasure, _sut.UnitOfMeasure);
+            Assert.Equal(testProduct.UnitPrice, _sut.UnitPrice);
+            Assert.Equal(testProduct.LastSupplyDate, _sut.LastSupplyDate);
+            Assert.Equal(testProduct.CategoryId, _sut.SelectedCategory.CategoryId);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<MessageType>()
+            ), Times.Never);
         }
 
         [Fact]
@@ -95,8 +105,18 @@ namespace FoodServiceInventoryApp.Tests
             Assert.Equal(0, _sut.Quantity);
             Assert.Equal(string.Empty, _sut.UnitOfMeasure);
             Assert.Equal(0m, _sut.UnitPrice);
-        }
 
+            Assert.Equal(DateTime.Now.Date, _sut.LastSupplyDate.Date);
+
+            Assert.Equal(_sut.Categories.FirstOrDefault(), _sut.SelectedCategory);
+            Assert.Equal(_sut.Suppliers.FirstOrDefault(), _sut.SelectedSupplier);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                "Продукт не найден для редактирования.",
+                "Ошибка",
+                MessageType.Error
+            ), Times.Once);
+        }
 
         [Fact]
         public async Task SaveProductCommand_CanExecute_ReturnsTrue_WhenProductIsValid()
@@ -174,6 +194,8 @@ namespace FoodServiceInventoryApp.Tests
         [Fact]
         public async Task SaveProductCommand_ShouldCallUpdateProduct_WhenInEditMode()
         {
+            await _sut.LoadCategoriesCommand.ExecuteAsync(null);
+
             _sut.IsEditMode = true;
             _sut.ProductId = 5;
             _sut.ProductName = "Обновленный Продукт";
@@ -181,7 +203,7 @@ namespace FoodServiceInventoryApp.Tests
             _sut.UnitOfMeasure = "кг";
             _sut.UnitPrice = 20.0m;
             _sut.LastSupplyDate = new DateTime(2024, 6, 22);
-            _sut.SelectedCategory = new Category { CategoryId = 2, CategoryName = "Молочные продукты" };
+            _sut.SelectedCategory = new Category { CategoryId = 1, CategoryName = "Напитки" };
 
             var existingProduct = new Product
             {
@@ -195,7 +217,7 @@ namespace FoodServiceInventoryApp.Tests
             };
 
             _mockProductService.Setup(s => s.GetProductByIdAsync(5)).ReturnsAsync(existingProduct);
-            _mockProductService.Setup(s => s.ProductExistsByNameAsync(It.IsAny<string>())).ReturnsAsync(false);
+            _mockProductService.Setup(s => s.ProductExistsByNameAsync("Обновленный Продукт")).ReturnsAsync(false);
             _mockProductService.Setup(s => s.UpdateProductAsync(It.IsAny<Product>())).Returns(Task.CompletedTask);
 
             await _sut.SaveProductCommand.ExecuteAsync(null);
@@ -207,10 +229,22 @@ namespace FoodServiceInventoryApp.Tests
                 p.UnitOfMeasure == "кг" &&
                 p.UnitPrice == 20.0m &&
                 p.LastSupplyDate == new DateTime(2024, 6, 22) &&
-                p.CategoryId == 2)), Times.Once);
+                p.CategoryId == 1)), Times.Once);
 
             _mockProductService.Verify(s => s.AddProductAsync(It.IsAny<Product>()), Times.Never);
             _mockProductSupplyHistoryService.Verify(s => s.AddSupplyRecordAsync(It.IsAny<ProductSupplyHistory>()), Times.Never);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                "Продукт успешно обновлен!",
+                "Успех",
+                MessageType.Information
+            ), Times.Once);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                It.Is<string>(s => s.Contains("Ошибка")),
+                It.IsAny<string>(),
+                It.IsAny<MessageType>()
+            ), Times.Never);
         }
 
         [Fact]
@@ -232,11 +266,19 @@ namespace FoodServiceInventoryApp.Tests
             _mockProductService.Verify(s => s.AddProductAsync(It.IsAny<Product>()), Times.Never);
             _mockProductService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
             _mockProductSupplyHistoryService.Verify(s => s.AddSupplyRecordAsync(It.IsAny<ProductSupplyHistory>()), Times.Never);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                $"Продукт с названием '{_sut.ProductName}' уже существует.",
+                "Ошибка",
+                MessageType.Error
+            ), Times.Once);
         }
 
         [Fact]
         public async Task SaveProductCommand_ShouldNotUpdateProduct_WhenEditModeButProductNameConflictsWithAnotherProduct()
         {
+            await _sut.LoadCategoriesCommand.ExecuteAsync(null);
+
             _sut.IsEditMode = true;
             _sut.ProductId = 1;
             _sut.ProductName = "Конфликтное Название";
@@ -244,10 +286,9 @@ namespace FoodServiceInventoryApp.Tests
             _sut.UnitOfMeasure = "шт.";
             _sut.UnitPrice = 10.0m;
             _sut.LastSupplyDate = DateTime.Now;
-            _sut.SelectedCategory = new Category { CategoryId = 1, CategoryName = "Тест" };
+            _sut.SelectedCategory = new Category { CategoryId = 1, CategoryName = "Напитки" };
 
-            var originalProduct = new Product { ProductId = 1, ProductName = "Оригинальное Название" };
-            var conflictingProduct = new Product { ProductId = 2, ProductName = "Конфликтное Название" };
+            var originalProduct = new Product { ProductId = 1, ProductName = "Оригинальное Название", CategoryId = 1 };
 
             _mockProductService.Setup(s => s.GetProductByIdAsync(1)).ReturnsAsync(originalProduct);
             _mockProductService.Setup(s => s.ProductExistsByNameAsync("Конфликтное Название")).ReturnsAsync(true);
@@ -257,11 +298,20 @@ namespace FoodServiceInventoryApp.Tests
             _mockProductService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
             _mockProductService.Verify(s => s.AddProductAsync(It.IsAny<Product>()), Times.Never);
             _mockProductSupplyHistoryService.Verify(s => s.AddSupplyRecordAsync(It.IsAny<ProductSupplyHistory>()), Times.Never);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                $"Продукт с названием '{_sut.ProductName}' уже существует.",
+                "Ошибка",
+                MessageType.Error
+            ), Times.Once);
         }
 
         [Fact]
         public void ResetForm_ShouldClearAllProperties()
         {
+            _sut.LoadCategoriesCommand.ExecuteAsync(null).Wait();
+            _sut.LoadSuppliersCommand.ExecuteAsync(null).Wait();
+
             _sut.IsEditMode = true;
             _sut.ProductId = 1;
             _sut.ProductName = "Какой-то продукт";
@@ -284,7 +334,7 @@ namespace FoodServiceInventoryApp.Tests
 
             Assert.NotNull(_sut.Categories);
             Assert.NotNull(_sut.Suppliers);
-           
+
             Assert.Equal(_sut.Categories.FirstOrDefault(), _sut.SelectedCategory);
             Assert.Equal(_sut.Suppliers.FirstOrDefault(), _sut.SelectedSupplier);
         }
@@ -301,6 +351,90 @@ namespace FoodServiceInventoryApp.Tests
             _sut.ProductName = "Новое Имя";
 
             Assert.Equal("ProductName", changedPropertyName);
+        }
+
+        [Fact]
+        public async Task SaveProductCommand_ShouldAddProductAndSupplyHistory_WhenInAddModeAndValid()
+        {
+            await _sut.LoadCategoriesCommand.ExecuteAsync(null);
+            await _sut.LoadSuppliersCommand.ExecuteAsync(null);
+
+            _sut.IsEditMode = false;
+            _sut.ProductName = "Новый Уникальный Продукт";
+            _sut.Quantity = 10;
+            _sut.UnitOfMeasure = "шт.";
+            _sut.UnitPrice = 5.50m;
+            _sut.LastSupplyDate = new DateTime(2024, 6, 24);
+            _sut.SelectedCategory = _sut.Categories.First();
+            _sut.SelectedSupplier = _sut.Suppliers.First();
+
+            _mockProductService.Setup(s => s.ProductExistsByNameAsync(It.IsAny<string>())).ReturnsAsync(false);
+
+            _mockProductService.Setup(s => s.AddProductAsync(It.IsAny<Product>()))
+                   .Callback<Product>(product => product.ProductId = 100)
+                   .Returns((Product product) => Task.FromResult(product));
+
+            _mockProductSupplyHistoryService.Setup(s => s.AddSupplyRecordAsync(It.IsAny<ProductSupplyHistory>())).Returns(Task.CompletedTask);
+
+            await _sut.SaveProductCommand.ExecuteAsync(null);
+
+            _mockProductService.Verify(s => s.AddProductAsync(It.Is<Product>(p =>
+                p.ProductName == "Новый Уникальный Продукт" &&
+                p.Quantity == 10 &&
+                p.UnitOfMeasure == "шт." &&
+                p.UnitPrice == 5.50m &&
+                p.LastSupplyDate == new DateTime(2024, 6, 24) &&
+                p.CategoryId == _sut.SelectedCategory.CategoryId
+            )), Times.Once);
+
+            _mockProductSupplyHistoryService.Verify(s => s.AddSupplyRecordAsync(It.Is<ProductSupplyHistory>(psh =>
+                psh.ProductId == 100 &&
+                psh.SupplierId == _sut.SelectedSupplier.SupplierId &&
+                psh.SuppliedQuantity == 10 &&
+                psh.SupplyUnitPrice == 5.50m &&
+                psh.SupplyDate == new DateTime(2024, 6, 24)
+            )), Times.Once);
+
+            _mockProductService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                $"Продукт 'Новый Уникальный Продукт' и его первая поставка успешно добавлены!",
+                "Успех",
+                MessageType.Information
+            ), Times.Once);
+
+            Assert.False(_sut.IsEditMode);
+            Assert.Equal(0, _sut.ProductId);
+        }
+
+        [Fact]
+        public async Task SaveProductCommand_ShouldDisplayError_WhenAddProductThrowsException()
+        {
+            await _sut.LoadCategoriesCommand.ExecuteAsync(null);
+            await _sut.LoadSuppliersCommand.ExecuteAsync(null);
+
+            _sut.IsEditMode = false;
+            _sut.ProductName = "Продукт с ошибкой";
+            _sut.Quantity = 1;
+            _sut.UnitOfMeasure = "шт.";
+            _sut.UnitPrice = 1;
+            _sut.LastSupplyDate = DateTime.Now;
+            _sut.SelectedCategory = _sut.Categories.First();
+            _sut.SelectedSupplier = _sut.Suppliers.First();
+
+            _mockProductService.Setup(s => s.ProductExistsByNameAsync(It.IsAny<string>())).ReturnsAsync(false);
+            _mockProductService.Setup(s => s.AddProductAsync(It.IsAny<Product>())).ThrowsAsync(new InvalidOperationException("Тестовая ошибка добавления продукта."));
+
+            await _sut.SaveProductCommand.ExecuteAsync(null);
+
+            _mockMessageService.Verify(m => m.ShowMessage(
+                It.Is<string>(s => s.Contains("Ошибка при добавлении продукта")),
+                "Ошибка",
+                MessageType.Error
+            ), Times.Once);
+
+            _mockProductService.Verify(s => s.AddProductAsync(It.IsAny<Product>()), Times.Once);
+            _mockProductSupplyHistoryService.Verify(s => s.AddSupplyRecordAsync(It.IsAny<ProductSupplyHistory>()), Times.Never);
         }
     }
 }

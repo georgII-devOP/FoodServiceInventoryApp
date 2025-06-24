@@ -6,13 +6,13 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Diagnostics;
 
 namespace FoodServiceInventoryApp.ViewModels
 {
     public partial class ProductInputVM : ObservableObject
     {
+        private readonly IMessageService _messageService;
         private readonly IProductService _productService;
         private readonly ICategoryService _categoryService;
         private readonly ISupplierService _supplierService;
@@ -56,12 +56,14 @@ namespace FoodServiceInventoryApp.ViewModels
 
         public ProductInputVM(IProductService productService, ICategoryService categoryService,
                               ISupplierService supplierService,
-                              IProductSupplyHistoryService productSupplyHistoryService)
+                              IProductSupplyHistoryService productSupplyHistoryService,
+                              IMessageService messageService)
         {
             _productService = productService;
             _categoryService = categoryService;
             _supplierService = supplierService;
             _productSupplyHistoryService = productSupplyHistoryService;
+            _messageService = messageService;
 
             Categories = new ObservableCollection<Category>();
             Suppliers = new ObservableCollection<Supplier>();
@@ -139,7 +141,8 @@ namespace FoodServiceInventoryApp.ViewModels
             }
             else
             {
-                MessageBox.Show("Продукт не найден для редактирования.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                _messageService.ShowMessage("Продукт не найден для редактирования.", "Ошибка", MessageType.Error);
                 ResetForm();
             }
         }
@@ -159,7 +162,6 @@ namespace FoodServiceInventoryApp.ViewModels
 
         private bool CanSaveProduct()
         {
-
             bool baseValid = !string.IsNullOrWhiteSpace(ProductName) &&
                              SelectedCategory != null &&
                              !string.IsNullOrWhiteSpace(UnitOfMeasure);
@@ -181,7 +183,7 @@ namespace FoodServiceInventoryApp.ViewModels
         {
             if (!CanSaveProduct())
             {
-                MessageBox.Show("Пожалуйста, заполните все обязательные поля корректными значениями.", "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _messageService.ShowMessage("Пожалуйста, заполните все обязательные поля корректными значениями.", "Ошибка ввода", MessageType.Warning);
                 return;
             }
 
@@ -192,14 +194,14 @@ namespace FoodServiceInventoryApp.ViewModels
                 productToSave = await _productService.GetProductByIdAsync(ProductId);
                 if (productToSave == null)
                 {
-                    MessageBox.Show("Редактируемый продукт не найден в базе данных.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage("Редактируемый продукт не найден в базе данных.", "Ошибка", MessageType.Error);
                     ResetForm();
                     return;
                 }
 
                 if (await _productService.ProductExistsByNameAsync(ProductName) && ProductName.ToLower() != productToSave.ProductName.ToLower())
                 {
-                    MessageBox.Show($"Продукт с названием '{ProductName}' уже существует.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage($"Продукт с названием '{ProductName}' уже существует.", "Ошибка", MessageType.Error);
                     return;
                 }
 
@@ -213,18 +215,18 @@ namespace FoodServiceInventoryApp.ViewModels
                 try
                 {
                     await _productService.UpdateProductAsync(productToSave);
-                    MessageBox.Show("Продукт успешно обновлен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    _messageService.ShowMessage("Продукт успешно обновлен!", "Успех", MessageType.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка при обновлении продукта: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage($"Ошибка при обновлении продукта: {ex.Message}", "Ошибка", MessageType.Error);
                 }
             }
             else
             {
                 if (await _productService.ProductExistsByNameAsync(ProductName))
                 {
-                    MessageBox.Show($"Продукт с названием '{ProductName}' уже существует.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage($"Продукт с названием '{ProductName}' уже существует.", "Ошибка", MessageType.Error);
                     return;
                 }
 
@@ -259,12 +261,12 @@ namespace FoodServiceInventoryApp.ViewModels
 
                     await _productSupplyHistoryService.AddSupplyRecordAsync(supplyRecord);
 
-                    MessageBox.Show($"Продукт '{ProductName}' и его первая поставка успешно добавлены!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    _messageService.ShowMessage($"Продукт '{ProductName}' и его первая поставка успешно добавлены!", "Успех", MessageType.Information);
                     ResetForm();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка при добавлении продукта и его первой поставки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _messageService.ShowMessage($"Ошибка при добавлении продукта и его первой поставки: {ex.Message}", "Ошибка", MessageType.Error);
                     Debug.WriteLine($"Ошибка при добавлении продукта и его первой поставки: {ex.Message}");
                 }
             }
