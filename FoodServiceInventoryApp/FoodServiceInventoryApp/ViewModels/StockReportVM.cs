@@ -48,7 +48,7 @@ namespace FoodServiceInventoryApp.ViewModels
             LoadProductsCommand.Execute(null);
         }
 
-        private async Task LoadProductsAsync()
+        protected internal virtual async Task LoadProductsAsync()
         {
             Products.Clear();
             var productsFromDb = await _productService.GetAllProductsAsync();

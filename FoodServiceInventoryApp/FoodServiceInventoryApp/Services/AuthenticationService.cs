@@ -1,37 +1,34 @@
-﻿using Microsoft.EntityFrameworkCore;
-using FoodServiceInventoryApp.Models;
+﻿using FoodServiceInventoryApp.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Threading.Tasks;
 using BCrypt.Net;
 
 namespace FoodServiceInventoryApp.Services
 {
-    public class AuthenticationService
+    public class AuthenticationService : IAuthenticationService
     {
-        private readonly FoodServiceDbContext _dbContext;
+        private readonly FoodServiceDbContext _context;
 
-        public AuthenticationService(FoodServiceDbContext dbContext)
+        public AuthenticationService(FoodServiceDbContext context)
         {
-            _dbContext = dbContext;
+            _context = context;
         }
 
         public async Task<bool> AuthenticateUserAsync(string username, string password)
         {
-            var user = await _dbContext.Users
-                                     .FirstOrDefaultAsync(u => u.Username == username);
-
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
             if (user == null)
             {
                 return false;
             }
 
-            bool isPasswordCorrect = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-
-            return isPasswordCorrect;
+            return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
 
         public async Task<User> RegisterUserAsync(string firstName, string lastName, string patronymic, string position, string username, string password)
         {
-            if (await _dbContext.Users.AnyAsync(u => u.Username == username))
+            if (await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower()))
             {
                 throw new InvalidOperationException("Пользователь с таким именем уже существует.");
             }
@@ -48,8 +45,8 @@ namespace FoodServiceInventoryApp.Services
                 PasswordHash = hashedPassword
             };
 
-            _dbContext.Users.Add(newUser);
-            await _dbContext.SaveChangesAsync();
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
             return newUser;
         }
     }

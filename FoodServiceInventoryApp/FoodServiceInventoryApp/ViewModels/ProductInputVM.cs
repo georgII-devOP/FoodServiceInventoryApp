@@ -121,7 +121,7 @@ namespace FoodServiceInventoryApp.ViewModels
             }
         }
 
-        public async Task LoadProductForEdit(int productId)
+        public virtual async Task LoadProductForEdit(int productId)
         {
             IsEditMode = true;
             ProductId = productId;
@@ -144,7 +144,7 @@ namespace FoodServiceInventoryApp.ViewModels
             }
         }
 
-        public void ResetForm()
+        public virtual void ResetForm()
         {
             IsEditMode = false;
             ProductId = 0;

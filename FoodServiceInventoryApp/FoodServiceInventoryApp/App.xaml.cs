@@ -32,7 +32,7 @@ namespace FoodServiceInventoryApp
                     services.AddDbContext<FoodServiceDbContext>(options =>
                         options.UseSqlServer(connectionString));
 
-                    services.AddSingleton<AuthenticationService>();
+                    services.AddSingleton<IAuthenticationService, AuthenticationService>();
 
                     services.AddTransient<IProductService, ProductService>();
                     services.AddTransient<ICategoryService, CategoryService>();

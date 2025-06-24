@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36202.13 d17.14
+VisualStudioVersion = 17.14.36202.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodServiceInventoryApp", "FoodServiceInventoryApp\FoodServiceInventoryApp.csproj", "{41468C54-1522-4893-B559-FC1F65D81C7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodServiceInventoryApp.Tests", "FoodServiceInventoryApp.Tests\FoodServiceInventoryApp.Tests.csproj", "{F992B53A-4812-4989-A9C6-D4455E4FA01B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{41468C54-1522-4893-B559-FC1F65D81C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41468C54-1522-4893-B559-FC1F65D81C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41468C54-1522-4893-B559-FC1F65D81C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F992B53A-4812-4989-A9C6-D4455E4FA01B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F992B53A-4812-4989-A9C6-D4455E4FA01B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F992B53A-4812-4989-A9C6-D4455E4FA01B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F992B53A-4812-4989-A9C6-D4455E4FA01B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

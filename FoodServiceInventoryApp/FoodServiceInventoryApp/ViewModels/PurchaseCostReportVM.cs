@@ -90,7 +90,7 @@ namespace FoodServiceInventoryApp.ViewModels
             LoadFiltersCommand.Execute(null);
         }
 
-        private async Task LoadFiltersAsync()
+        protected internal virtual async Task LoadFiltersAsync()
         {
             ProductsFilter.Clear();
             ProductsFilter.Add(new Product { ProductId = 0, ProductName = "Все" });

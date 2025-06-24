@@ -10,7 +10,7 @@ namespace FoodServiceInventoryApp.ViewModels
 {
     public partial class LoginVM : ObservableObject
     {
-        private readonly AuthenticationService _authenticationService;
+        private readonly IAuthenticationService _authenticationService;
         private readonly INavigationService _navigationService;
 
         [ObservableProperty]
@@ -25,11 +25,10 @@ namespace FoodServiceInventoryApp.ViewModels
         public event EventHandler LoginSuccess;
 
         public ICommand NavigateToMainWindowCommand { get; }
-
         public ICommand LoginCommand { get; }
         public ICommand ExitCommand { get; }
 
-        public LoginVM(AuthenticationService authenticationService, INavigationService navigationService)
+        public LoginVM(IAuthenticationService authenticationService, INavigationService navigationService)
         {
             _authenticationService = authenticationService;
             _navigationService = navigationService;

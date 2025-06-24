@@ -57,7 +57,7 @@ namespace FoodServiceInventoryApp.ViewModels
             LoadSuppliersCommand.Execute(null);
         }
 
-        private async Task LoadSuppliersAsync()
+        protected internal virtual async Task LoadSuppliersAsync()
         {
             Suppliers.Clear();
             Suppliers.Add(new Supplier { SupplierId = 0, CompanyName = "Все" });
