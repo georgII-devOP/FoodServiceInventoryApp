@@ -14,5 +14,6 @@ namespace FoodServiceInventoryApp.Services
         Task<bool> ProductExistsAsync(int id);
         Task<bool> ProductExistsByNameAsync(string productName);
         Task UpdateProductQuantityAsync(int productId, decimal quantityChange);
+        Task<Product> GetProductByNameAsync(string productName);
     }
 }

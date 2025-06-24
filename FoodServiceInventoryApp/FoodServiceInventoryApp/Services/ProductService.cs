@@ -73,5 +73,9 @@ namespace FoodServiceInventoryApp.Services
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<Product> GetProductByNameAsync(string productName)
+        {
+            return await _context.Products.FirstOrDefaultAsync(p => p.ProductName.ToLower() == productName.ToLower());
+        }
     }
 }

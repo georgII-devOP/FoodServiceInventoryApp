@@ -61,7 +61,7 @@ namespace FoodServiceInventoryApp.ViewModels
         [ObservableProperty]
         private string _errorMessage;
 
-        public ICommand GenerateReportCommand { get; }
+        public IAsyncRelayCommand GenerateReportCommand { get; }
         public IAsyncRelayCommand LoadFiltersCommand { get; }
 
         public PurchaseCostReportVM(IProductSupplyHistoryService supplyHistoryService, IProductService productService, ICategoryService categoryService, ISupplierService supplierService)
@@ -71,11 +71,13 @@ namespace FoodServiceInventoryApp.ViewModels
             _categoryService = categoryService;
             _supplierService = supplierService;
 
-            Months = new ObservableCollection<string>(Enumerable.Range(1, 12).Select(m => new DateTime(DateTime.Now.Year, m, 1).ToString("MMMM")));
-            SelectedMonth = Months[DateTime.Now.Month - 1];
+            var now = DateTime.Now;
 
-            Years = new ObservableCollection<int>(Enumerable.Range(DateTime.Now.Year - 2, 5).OrderByDescending(y => y));
-            SelectedYear = DateTime.Now.Year;
+            Months = new ObservableCollection<string>(Enumerable.Range(1, 12).Select(m => new DateTime(now.Year, m, 1).ToString("MMMM")));
+            SelectedMonth = Months[now.Month - 1];
+
+            Years = new ObservableCollection<int>(Enumerable.Range(now.Year - 2, 5).OrderByDescending(y => y));
+            SelectedYear = now.Year;
 
             ProductsFilter = new ObservableCollection<Product>();
             SuppliersFilter = new ObservableCollection<Supplier>();
@@ -100,7 +102,6 @@ namespace FoodServiceInventoryApp.ViewModels
                 ProductsFilter.Add(p);
             }
             SelectedProductFilter = ProductsFilter.FirstOrDefault();
-
 
             SuppliersFilter.Clear();
             SuppliersFilter.Add(new Supplier { SupplierId = 0, CompanyName = "Все" });

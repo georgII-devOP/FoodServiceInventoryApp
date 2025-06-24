@@ -87,7 +87,7 @@ namespace FoodServiceInventoryApp.ViewModels
             };
         }
 
-        private async Task LoadCategoriesAsync()
+        public virtual async Task LoadCategoriesAsync()
         {
             Categories.Clear();
             var categoriesFromDb = await _categoryService.GetAllCategoriesAsync();
@@ -104,7 +104,7 @@ namespace FoodServiceInventoryApp.ViewModels
             }
         }
 
-        private async Task LoadSuppliersAsync()
+        public virtual async Task LoadSuppliersAsync()
         {
             Suppliers.Clear();
             var allSuppliers = await _supplierService.GetAllSuppliersAsync();
@@ -241,6 +241,7 @@ namespace FoodServiceInventoryApp.ViewModels
                     };
 
                     await _productService.AddProductAsync(productToSave);
+                    ProductId = productToSave.ProductId;
 
                     if (productToSave.ProductId == 0)
                     {

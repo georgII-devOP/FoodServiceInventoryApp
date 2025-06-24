@@ -37,41 +37,41 @@ namespace FoodServiceInventoryApp.ViewModels
             ExecuteNavigateToProductInputView();
         }
 
-        public async void NavigateToProductInputForEdit(int productId)
+        public virtual async Task NavigateToProductInputForEdit(int productId)
         {
             var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
             await productInputVm.LoadProductForEdit(productId);
             CurrentViewModel = productInputVm;
         }
 
-        private void ExecuteNavigateToProductInputView()
+        public virtual async void ExecuteNavigateToProductInputView()
         {
             var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
             productInputVm.ResetForm();
             CurrentViewModel = productInputVm;
         }
 
-        private void ExecuteNavigateToProductRemovalView()
+        public virtual async void ExecuteNavigateToProductRemovalView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<ProductRemovalVM>();
         }
 
-        private void ExecuteNavigateToStockReportView()
+        public virtual async void ExecuteNavigateToStockReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<StockReportVM>();
         }
 
-        private void ExecuteNavigateToPurchaseCostReportView()
+        public virtual async void ExecuteNavigateToPurchaseCostReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<PurchaseCostReportVM>();
         }
 
-        private void ExecuteNavigateToSupplierReportView()
+        public virtual async void ExecuteNavigateToSupplierReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<SupplierReportVM>();
         }
 
-        private void ExecuteNavigateToPurchasePlanView()
+        public virtual async void ExecuteNavigateToPurchasePlanView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<PurchasePlanVM>();
         }
