@@ -1,5 +1,4 @@
 name: .NET CI Pipeline
-
 on:
   push:
     branches:
@@ -9,12 +8,13 @@ on:
     branches:
       - main
       - develop
-
 env:
   DOTNET_VERSION: '8.0.x'
+
   SOLUTION_DIR: 'FoodServiceInventoryApp' 
   
   PROJECT_TESTS: 'FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj'
+
   COVERAGE_REPORT_PATH: 'FoodServiceInventoryApp.Tests/TestResults/Coverage/cobertura.xml'
 
 jobs:
@@ -32,14 +32,17 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
-      working-directory: ${{ env.SOLUTION_DIR }} # <-- Добавлено
+      working-directory: ${{ env.SOLUTION_DIR }}
 
     - name: Build project
       run: dotnet build --no-restore --configuration Release
-      working-directory: ${{ env.SOLUTION_DIR }} # <-- Добавлено
+      working-directory: ${{ env.SOLUTION_DIR }}
 
     - name: Run tests with coverage
       run: |
+        # Запускаем тесты с coverlet для сбора покрытия.
+        # Пути PROJECT_TESTS и COVERAGE_REPORT_PATH уже относительны SOLUTION_DIR,
+        # так как 'working-directory' установлен.
         dotnet test ${{ env.PROJECT_TESTS }} \
           --no-build \
           --configuration Release \
@@ -56,13 +59,13 @@ jobs:
       with:
         name: test-results
         path: |
-          ${{ env.SOLUTION_DIR }}/TestResults/test_results.trx # <-- Путь изменен
-          ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }} # <-- Путь изменен
+          ${{ env.SOLUTION_DIR }}/TestResults/test_results.trx # Путь к файлу результатов тестов (.trx)
+          ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }} # Путь к отчету о покрытии (cobertura.xml)
 
     - name: Publish code coverage report
-      uses: danielpalme/ReportGenerator-Action@v5.1.0
+      uses: danielpalme/ReportGenerator-Action@v5
       with:
-        reports: ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }}
+        reports: ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }} 
         targetdir: 'coverage_html'
         reporttypes: 'Html'
 
