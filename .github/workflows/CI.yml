@@ -1,76 +1,84 @@
-name: .NET CI Pipeline
+name: .NET CI Pipeline - FoodServiceInventoryApp
 on:
   push:
     branches:
       - main
-      - develop
   pull_request:
     branches:
       - main
-      - develop
+
 env:
   DOTNET_VERSION: '8.0.x'
-
-  SOLUTION_DIR: 'FoodServiceInventoryApp' 
   
-  PROJECT_TESTS: 'FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj'
+  SOLUTION_ROOT_DIR: 'FoodServiceInventoryApp' 
+  
+  SOLUTION_FILE_NAME: 'FoodServiceInventoryApp.sln' 
+  
+  TEST_PROJECT_PATH: 'FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj'
+  
+  RUNSETTINGS_FILE_PATH: 'FoodServiceInventoryApp.Tests/test.runsettings' 
 
-  COVERAGE_REPORT_PATH: 'FoodServiceInventoryApp.Tests/TestResults/Coverage/cobertura.xml'
+  TEST_RESULTS_DIR: './TestResults' 
+  
+  COVERAGE_COBERTURA_FILE_NAME: 'coverage.cobertura.xml'
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup .NET
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ${{ env.SOLUTION_DIR }}
+      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+      run: dotnet restore ${{ env.SOLUTION_FILE_NAME }}
 
-    - name: Build project
-      run: dotnet build --no-restore --configuration Release
-      working-directory: ${{ env.SOLUTION_DIR }}
+    - name: Build solution
+      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+      run: dotnet build ${{ env.SOLUTION_FILE_NAME }} --no-restore --configuration Release
 
-    - name: Run tests with coverage
+    - name: Install Coverlet and ReportGenerator Tools
       run: |
-        # Запускаем тесты с coverlet для сбора покрытия.
-        # Пути PROJECT_TESTS и COVERAGE_REPORT_PATH уже относительны SOLUTION_DIR,
-        # так как 'working-directory' установлен.
-        dotnet test ${{ env.PROJECT_TESTS }} \
+        dotnet tool install --global coverlet.console --version 6.0.0
+        dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.3.0
+
+    - name: Run Unit Tests with Coverage
+      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+      run: |
+        dotnet test ${{ env.TEST_PROJECT_PATH }} \
           --no-build \
           --configuration Release \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=cobertura \
-          /p:CoverletOutput=${{ env.COVERAGE_REPORT_PATH }} \
-          --results-directory ./TestResults \
-          --logger "trx;LogFileName=test_results.trx"
-      working-directory: ${{ env.SOLUTION_DIR }}
+          --collect:"XPlat Code Coverage" \
+          --settings "${{ env.RUNSETTINGS_FILE_PATH }}" \
+          --results-directory "${{ env.TEST_RESULTS_DIR }}" \
+          --logger "trx;LogFileName=test_results.trx" \
+          --verbosity normal
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          ${{ env.SOLUTION_DIR }}/TestResults/test_results.trx # Путь к файлу результатов тестов (.trx)
-          ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }} # Путь к отчету о покрытии (cobertura.xml)
-
-    - name: Publish code coverage report
-      uses: danielpalme/ReportGenerator-Action@v5
-      with:
-        reports: ${{ env.SOLUTION_DIR }}/${{ env.COVERAGE_REPORT_PATH }} 
-        targetdir: 'coverage_html'
-        reporttypes: 'Html'
-
-    - name: Upload coverage HTML report
+    - name: Generate Coverage Report
+      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+      run: |
+        reportgenerator "-reports:${{ env.TEST_RESULTS_DIR }}/**/${{ env.COVERAGE_COBERTURA_FILE_NAME }}" `
+          "-targetdir:./CoverageReport" `
+          "-reporttypes:Html" `
+          "-assemblyfilters:+FoodServiceInventoryApp;+FoodServiceInventoryApp.ViewModels" `
+          "-filefilters:-*Tests;+*;-*Migrations*;**/*.xaml;**/*.xaml.cs;**obj\**\Views\**\*.g.cs;**Views\**\*.cs"
+      
+    - name: Upload Test Results Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: html-coverage-report
-        path: coverage_html
+        name: TestResults
+        path: ${{ env.SOLUTION_ROOT_DIR }}/${{ env.TEST_RESULTS_DIR }}
+        retention-days: 5
+
+    - name: Upload Coverage Report Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CodeCoverageReport
+        path: ${{ env.SOLUTION_ROOT_DIR }}/CoverageReport
+        retention-days: 5
