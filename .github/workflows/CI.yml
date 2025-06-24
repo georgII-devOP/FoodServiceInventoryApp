@@ -1,0 +1,87 @@
+name: .NET CI Pipeline - FoodServiceInventoryApp
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout code
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      working-directory: FoodServiceInventoryApp 
+      run: dotnet restore FoodServiceInventoryApp.sln
+
+    - name: Build solution
+      working-directory: FoodServiceInventoryApp 
+      run: dotnet build FoodServiceInventoryApp.sln --no-restore --configuration Release
+
+    - name: Install Coverlet and ReportGenerator
+      run: |
+        dotnet tool install --global coverlet.console --version 6.0.0 # Актуальная версия
+        dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.3.0 # Актуальная версия
+
+    - name: Run Unit Tests with Coverage
+      working-directory: . 
+      shell: pwsh 
+      run: |
+        dotnet test `
+          FoodServiceInventoryApp/FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj `
+          --no-build `
+          --configuration Release `
+          --collect:"XPlat Code Coverage" `
+          --settings "FoodServiceInventoryApp/FoodServiceInventoryApp.Tests/test.runsettings" `
+          --results-directory "./TestResults" `
+          --logger "trx;LogFileName=test_results.trx" `
+          --verbosity normal
+
+    - name: Check Cobertura XML for View files
+      working-directory: . 
+      shell: pwsh 
+      run: |
+        $coverageFile = Get-ChildItem -Path "./TestResults" -Recurse -Filter "coverage.cobertura.xml" | Select-Object -ExpandProperty FullName
+        if ($coverageFile) {
+            Write-Host "Found Cobertura XML at: $($coverageFile)"
+            Write-Host "--- Searching for 'Views' or 'xaml' in XML ---"
+            Get-Content $coverageFile | Select-String -Pattern "Views|xaml" -Context 0,5
+            Write-Host "--- End of search ---"
+        } else {
+            Write-Host "Cobertura XML file not found. Please check previous steps and paths."
+        }
+
+    - name: Generate Coverage Report
+      working-directory: .
+      shell: pwsh 
+      run: |
+        reportgenerator "-reports:./TestResults/**/coverage.cobertura.xml" `
+          "-targetdir:./CoverageReport" `
+          "-reporttypes:Html" `
+          "-assemblyfilters:+FoodServiceInventoryApp;+FoodServiceInventoryApp.ViewModels" `
+          "-filefilters:-*Tests;+*;-*Migrations*;**/*Views*/**"
+      
+    - name: Upload Test Results Artifact (Optional, но полезно для отладки)
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestResults
+        path: TestResults/
+        retention-days: 5
+
+    - name: Upload Coverage Report Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CodeCoverageReport
+        path: CoverageReport/
+        retention-days: 5
