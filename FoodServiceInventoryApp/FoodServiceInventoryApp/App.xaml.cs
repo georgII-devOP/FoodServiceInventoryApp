@@ -1,18 +1,20 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FoodServiceInventoryApp.Services;
+using FoodServiceInventoryApp.ViewModels;
+using FoodServiceInventoryApp.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.IO;
-using System.Windows;
-using Microsoft.EntityFrameworkCore;
-using FoodServiceInventoryApp.Services;
-using FoodServiceInventoryApp.ViewModels;
-using FoodServiceInventoryApp.Views;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace FoodServiceInventoryApp
 {
+    [ExcludeFromCodeCoverage]
     public partial class App : Application
     {
         public readonly IHost _host;
