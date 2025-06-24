@@ -1,4 +1,5 @@
 name: .NET CI Pipeline - FoodServiceInventoryApp
+
 on:
   push:
     branches:
@@ -7,78 +8,80 @@ on:
     branches:
       - main
 
-env:
-  DOTNET_VERSION: '8.0.x'
-  
-  SOLUTION_ROOT_DIR: 'FoodServiceInventoryApp' 
-  
-  SOLUTION_FILE_NAME: 'FoodServiceInventoryApp.sln' 
-  
-  TEST_PROJECT_PATH: 'FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj'
-  
-  RUNSETTINGS_FILE_PATH: 'FoodServiceInventoryApp.Tests/test.runsettings' 
-
-  TEST_RESULTS_DIR: './TestResults' 
-  
-  COVERAGE_COBERTURA_FILE_NAME: 'coverage.cobertura.xml'
-
 jobs:
   build-and-test:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+      name: Checkout code
 
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
-      run: dotnet restore ${{ env.SOLUTION_FILE_NAME }}
+      working-directory: FoodServiceInventoryApp 
+      run: dotnet restore FoodServiceInventoryApp.sln
 
     - name: Build solution
-      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
-      run: dotnet build ${{ env.SOLUTION_FILE_NAME }} --no-restore --configuration Release
+      working-directory: FoodServiceInventoryApp 
+      run: dotnet build FoodServiceInventoryApp.sln --no-restore --configuration Release
 
-    - name: Install Coverlet and ReportGenerator Tools
+    - name: Install Coverlet and ReportGenerator
       run: |
-        dotnet tool install --global coverlet.console --version 6.0.0
-        dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.3.0
+        dotnet tool install --global coverlet.console --version 6.0.0 # Актуальная версия
+        dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.3.0 # Актуальная версия
 
     - name: Run Unit Tests with Coverage
-      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+      working-directory: . 
+      shell: pwsh 
       run: |
-        dotnet test ${{ env.TEST_PROJECT_PATH }} \
-          --no-build \
-          --configuration Release \
-          --collect:"XPlat Code Coverage" \
-          --settings "${{ env.RUNSETTINGS_FILE_PATH }}" \
-          --results-directory "${{ env.TEST_RESULTS_DIR }}" \
-          --logger "trx;LogFileName=test_results.trx" \
+        dotnet test `
+          FoodServiceInventoryApp/FoodServiceInventoryApp.Tests/FoodServiceInventoryApp.Tests.csproj `
+          --no-build `
+          --configuration Release `
+          --collect:"XPlat Code Coverage" `
+          --settings "FoodServiceInventoryApp/FoodServiceInventoryApp.Tests/test.runsettings" `
+          --results-directory "./TestResults" `
+          --logger "trx;LogFileName=test_results.trx" `
           --verbosity normal
 
-    - name: Generate Coverage Report
-      working-directory: ${{ env.SOLUTION_ROOT_DIR }}
+    - name: Check Cobertura XML for View files
+      working-directory: . 
+      shell: pwsh 
       run: |
-        reportgenerator "-reports:${{ env.TEST_RESULTS_DIR }}/**/${{ env.COVERAGE_COBERTURA_FILE_NAME }}" `
+        $coverageFile = Get-ChildItem -Path "./TestResults" -Recurse -Filter "coverage.cobertura.xml" | Select-Object -ExpandProperty FullName
+        if ($coverageFile) {
+            Write-Host "Found Cobertura XML at: $($coverageFile)"
+            Write-Host "--- Searching for 'Views' or 'xaml' in XML ---"
+            Get-Content $coverageFile | Select-String -Pattern "Views|xaml" -Context 0,5
+            Write-Host "--- End of search ---"
+        } else {
+            Write-Host "Cobertura XML file not found. Please check previous steps and paths."
+        }
+
+    - name: Generate Coverage Report
+      working-directory: .
+      shell: pwsh 
+      run: |
+        reportgenerator "-reports:./TestResults/**/coverage.cobertura.xml" `
           "-targetdir:./CoverageReport" `
           "-reporttypes:Html" `
           "-assemblyfilters:+FoodServiceInventoryApp;+FoodServiceInventoryApp.ViewModels" `
-          "-filefilters:-*Tests;+*;-*Migrations*;**/*.xaml;**/*.xaml.cs;**obj\**\Views\**\*.g.cs;**Views\**\*.cs"
+          "-filefilters:-*Tests;+*;-*Migrations*;**/*Views*/**"
       
-    - name: Upload Test Results Artifact
+    - name: Upload Test Results Artifact (Optional, но полезно для отладки)
       uses: actions/upload-artifact@v4
       with:
         name: TestResults
-        path: ${{ env.SOLUTION_ROOT_DIR }}/${{ env.TEST_RESULTS_DIR }}
+        path: TestResults/
         retention-days: 5
 
     - name: Upload Coverage Report Artifact
       uses: actions/upload-artifact@v4
       with:
         name: CodeCoverageReport
-        path: ${{ env.SOLUTION_ROOT_DIR }}/CoverageReport
+        path: CoverageReport/
         retention-days: 5
