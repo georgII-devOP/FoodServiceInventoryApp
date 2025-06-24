@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <RunSettings>
     <CodeCoverage>
         <Configuration>
@@ -7,7 +7,13 @@
                 $(MSBuildProjectDirectory)/**/*.Designer.cs;
                 $(MSBuildProjectDirectory)/**/*Migrations.cs;
                 $(MSBuildProjectDirectory)/**/*.g.cs;
-                $(MSBuildProjectDirectory)/**/*Tests.cs
+                $(MSBuildProjectDirectory)/**/*Tests.cs;
+                
+                $(MSBuildProjectDirectory)/**/App.xaml.cs;
+                $(MSBuildProjectDirectory)/**/*Window.xaml.cs;
+                $(MSBuildProjectDirectory)/**/*View.xaml.cs;
+                $(MSBuildProjectDirectory)/**/*.xaml;
+                                                                        
             </ExcludeByFile>
             <ExcludeByAttribute>
                 System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute;
