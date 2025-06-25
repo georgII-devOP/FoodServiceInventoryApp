@@ -37,41 +37,41 @@ namespace FoodServiceInventoryApp.ViewModels
             ExecuteNavigateToProductInputView();
         }
 
-        public virtual async Task NavigateToProductInputForEdit(int productId)
+        public async Task NavigateToProductInputForEdit(int productId)
         {
             var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
             await productInputVm.LoadProductForEdit(productId);
             CurrentViewModel = productInputVm;
         }
 
-        public virtual async void ExecuteNavigateToProductInputView()
+        public async void ExecuteNavigateToProductInputView()
         {
             var productInputVm = _serviceProvider.GetRequiredService<ProductInputVM>();
             productInputVm.ResetForm();
             CurrentViewModel = productInputVm;
         }
 
-        public virtual async void ExecuteNavigateToProductRemovalView()
+        public async void ExecuteNavigateToProductRemovalView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<ProductRemovalVM>();
         }
 
-        public virtual async void ExecuteNavigateToStockReportView()
+        public async void ExecuteNavigateToStockReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<StockReportVM>();
         }
 
-        public virtual async void ExecuteNavigateToPurchaseCostReportView()
+        public async void ExecuteNavigateToPurchaseCostReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<PurchaseCostReportVM>();
         }
 
-        public virtual async void ExecuteNavigateToSupplierReportView()
+        public async void ExecuteNavigateToSupplierReportView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<SupplierReportVM>();
         }
 
-        public virtual async void ExecuteNavigateToPurchasePlanView()
+        public async void ExecuteNavigateToPurchasePlanView()
         {
             CurrentViewModel = _serviceProvider.GetRequiredService<PurchasePlanVM>();
         }

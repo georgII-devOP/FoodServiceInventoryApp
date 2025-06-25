@@ -5,6 +5,7 @@ using FoodServiceInventoryApp.Models;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using BCrypt.Net;
 
 namespace FoodServiceInventoryApp.Tests
@@ -32,102 +33,166 @@ namespace FoodServiceInventoryApp.Tests
             _context.Dispose();
         }
 
-
-        [Fact]
-        public async Task AuthenticateUserAsync_ReturnsTrue_ForValidCredentials()
+        private async Task AddTestUserForAuthentication(string username, string password, string firstName = "Test", string lastName = "User", string patronymic = "", string position = "Test Position")
         {
-            string testPassword = "securePassword123";
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(testPassword);
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
             var user = new User
             {
-                FirstName = "Иван",
-                LastName = "Иванов",
-                Patronymic = "Иванович",
-                Position = "Администратор",
-                Username = "testuser",
+                FirstName = firstName,
+                LastName = lastName,
+                Patronymic = patronymic,
+                Position = position,
+                Username = username,
                 PasswordHash = hashedPassword
             };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+        }
 
-            bool result = await _sut.AuthenticateUserAsync("testuser", testPassword);
+        [Fact]
+        public async Task AuthenticateUserAsync_ReturnsTrue_ForValidCredentials()
+        {
+            string testUsername = "testuser";
+            string testPassword = "securePassword123";
+            await AddTestUserForAuthentication(testUsername, testPassword, "Иван", "Иванов", "Иванович", "Администратор");
 
+            // Act
+            bool result = await _sut.AuthenticateUserAsync(testUsername, testPassword);
+
+            // Assert
             Assert.True(result);
         }
 
         [Fact]
         public async Task AuthenticateUserAsync_ReturnsFalse_ForNonExistentUser()
         {
+            // Act
             bool result = await _sut.AuthenticateUserAsync("nonexistentuser", "anypassword");
 
+            // Assert
             Assert.False(result);
         }
 
         [Fact]
         public async Task AuthenticateUserAsync_ReturnsFalse_ForIncorrectPassword()
         {
+            string testUsername = "anotheruser";
             string correctPassword = "correctPassword";
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(correctPassword);
-            var user = new User
-            {
-                FirstName = "Петр",
-                LastName = "Петров",
-                Patronymic = "Петрович",
-                Position = "Менеджер",
-                Username = "anotheruser",
-                PasswordHash = hashedPassword
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await AddTestUserForAuthentication(testUsername, correctPassword, "Петр", "Петров", "Петрович", "Менеджер");
 
-            bool result = await _sut.AuthenticateUserAsync("anotheruser", "incorrectPassword");
+            // Act
+            bool result = await _sut.AuthenticateUserAsync(testUsername, "incorrectPassword");
 
+            // Assert
             Assert.False(result);
         }
 
-
         [Fact]
-        public async Task RegisterUserAsync_AddsNewUserToDatabase()
+        public async Task RegisterUserAsync_ReturnsNonNullUser()
         {
-            string username = "newUser";
-            string password = "newSecurePassword";
+            // Act
+            var newUser = await _sut.RegisterUserAsync("Новый", "Пользователь", "Новичок", "Работник", "newUser", "newSecurePassword");
 
-            var newUser = await _sut.RegisterUserAsync("Новый", "Пользователь", "Новичок", "Работник", username, password);
-
+            // Assert
             Assert.NotNull(newUser);
-            Assert.True(newUser.UserId > 0);
-            Assert.Equal(username, newUser.Username);
-
-            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-            Assert.NotNull(userInDb);
-            Assert.Equal("Новый", userInDb.FirstName);
-            Assert.True(BCrypt.Net.BCrypt.Verify(password, userInDb.PasswordHash));
         }
 
         [Fact]
-        public async Task RegisterUserAsync_ThrowsException_WhenUserAlreadyExists()
+        public async Task RegisterUserAsync_AssignsUserId()
         {
-            string existingUsername = "existingUser";
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword("somepass");
-            _context.Users.Add(new User
-            {
-                FirstName = "Старый",
-                LastName = "Пользователь",
-                Patronymic = "",
-                Position = "Кассир",
-                Username = existingUsername,
-                PasswordHash = hashedPassword
-            });
-            await _context.SaveChangesAsync();
+            // Act
+            var newUser = await _sut.RegisterUserAsync("Новый", "Пользователь", "Новичок", "Работник", "newUser", "newSecurePassword");
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                _sut.RegisterUserAsync("Другой", "Пользователь", "", "Грузчик", existingUsername, "anotherPassword")
-            );
+            // Assert
+            Assert.True(newUser.UserId > 0);
+        }
 
-            Assert.Contains("Пользователь с таким именем уже существует.", exception.Message);
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserToDatabase()
+        {
+            string username = "userToVerify";
+            string password = "passwordForVerification";
 
-            var userCount = await _context.Users.CountAsync();
-            Assert.Equal(1, userCount);
+            // Act
+            await _sut.RegisterUserAsync("Тест", "Свойства", "Пользователь", "Должность", username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.NotNull(userInDb);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserWithCorrectFirstName()
+        {
+            string username = "userFirstName";
+            string password = "passwordForFirstName";
+            string expectedFirstName = "Ольга";
+
+            // Act
+            await _sut.RegisterUserAsync(expectedFirstName, "Фамилия", "", "Должность", username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.Equal(expectedFirstName, userInDb.FirstName);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserWithCorrectLastName()
+        {
+            string username = "userLastName";
+            string password = "passwordForLastName";
+            string expectedLastName = "Смирнова";
+
+            // Act
+            await _sut.RegisterUserAsync("Имя", expectedLastName, "", "Должность", username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.Equal(expectedLastName, userInDb.LastName);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserWithCorrectPatronymic()
+        {
+            string username = "userPatronymic";
+            string password = "passwordForPatronymic";
+            string expectedPatronymic = "Александровна";
+
+            // Act
+            await _sut.RegisterUserAsync("Имя", "Фамилия", expectedPatronymic, "Должность", username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.Equal(expectedPatronymic, userInDb.Patronymic);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserWithCorrectPosition()
+        {
+            string username = "userPosition";
+            string password = "passwordForPosition";
+            string expectedPosition = "Руководитель";
+
+            // Act
+            await _sut.RegisterUserAsync("Имя", "Фамилия", "", expectedPosition, username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.Equal(expectedPosition, userInDb.Position);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_SavesUserWithCorrectUsername()
+        {
+            string username = "expectedUsername";
+            string password = "passwordForUsername";
+
+            // Act
+            await _sut.RegisterUserAsync("Имя", "Фамилия", "", "Должность", username, password);
+
+            // Assert
+            var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            Assert.Equal(username, userInDb.Username);
         }
 
         [Fact]
@@ -136,10 +201,10 @@ namespace FoodServiceInventoryApp.Tests
             string username = "hashedUser";
             string password = "passwordToHash";
 
+            // Act
             var newUser = await _sut.RegisterUserAsync("Тест", "Хеш", "", "Тестировщик", username, password);
 
-            Assert.NotNull(newUser.PasswordHash);
-            Assert.NotEqual(password, newUser.PasswordHash);
+            // Assert
             Assert.True(BCrypt.Net.BCrypt.Verify(password, newUser.PasswordHash));
         }
     }

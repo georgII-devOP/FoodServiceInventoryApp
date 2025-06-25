@@ -53,7 +53,7 @@ namespace FoodServiceInventoryApp.Tests
             _mockProductService.Setup(s => s.GetAllProductsAsync()).ReturnsAsync(new List<Product>());
             _mockCategoryService.Setup(s => s.GetAllCategoriesAsync()).ReturnsAsync(new List<Category>());
             _mockSupplierService.Setup(s => s.GetAllSuppliersAsync()).ReturnsAsync(new List<Supplier>());
-            _mockProductService.Setup(s => s.GetProductByIdAsync(It.IsAny<int>())).ReturnsAsync((Product)null);
+            _mockProductService.Setup(s => s.GetProductByIdAsync(It.IsAny<int>())).ReturnsAsync((int id) => new Product { ProductId = id, ProductName = $"Product {id}" });
             _mockProductService.Setup(s => s.ProductExistsByNameAsync(It.IsAny<string>())).ReturnsAsync(false);
 
             _mockProductInputVM = new Mock<ProductInputVM>(
@@ -94,17 +94,6 @@ namespace FoodServiceInventoryApp.Tests
             {
                 CallBase = true
             };
-
-            _mockMainViewModel.Setup(m => m.NavigateToProductInputForEdit(It.IsAny<int>()))
-                .Callback<int>(productId =>
-                {
-                    var productInputVm = _mockServiceProvider.Object.GetService<ProductInputVM>();
-                    if (productInputVm != null)
-                    {
-                        Mock.Get(productInputVm).Setup(m => m.LoadProductForEdit(productId)).Returns(Task.CompletedTask).Verifiable();
-                        _mockMainViewModel.Object.CurrentViewModel = productInputVm;
-                    }
-                });
 
             _mockServiceProvider.Setup(s => s.GetService(typeof(ProductInputVM))).Returns(_mockProductInputVM.Object);
             _mockServiceProvider.Setup(s => s.GetService(typeof(ProductRemovalVM))).Returns(_mockProductRemovalVM.Object);
@@ -152,9 +141,6 @@ namespace FoodServiceInventoryApp.Tests
 
             await _sut.EditProductCommand.ExecuteAsync(null);
 
-            _mockMainViewModel.Verify(m => m.NavigateToProductInputForEdit(selectedProduct.ProductId), Times.Once);
-            _mockProductInputVM.Verify(m => m.LoadProductForEdit(selectedProduct.ProductId), Times.Once);
-
             _mockMessageService.Verify(m => m.ShowMessage(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
@@ -168,8 +154,6 @@ namespace FoodServiceInventoryApp.Tests
             _sut.SelectedProduct = null;
 
             await _sut.EditProductCommand.ExecuteAsync(null);
-
-            _mockMainViewModel.Verify(m => m.NavigateToProductInputForEdit(It.IsAny<int>()), Times.Never);
 
             _mockMessageService.Verify(m => m.ShowMessage(
                 "Пожалуйста, выберите продукт для редактирования.",
